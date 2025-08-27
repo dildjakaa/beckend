@@ -4,9 +4,9 @@
   "description": "Kracken messenger backend API server",
   "main": "server.js",
   "scripts": {
-    "start": "node server_postgres.js",
-    "dev": "nodemon server_postgres.js",
-    "dev-sqlite": "nodemon server.js",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "dev-sqlite": "nodemon server_sqlite_backup.js",
     "build": "echo \"Server build: Installing dependencies and initializing database...\"",
     "vercel-dev": "vercel dev",
     "init-db": "node scripts/init-db.js",

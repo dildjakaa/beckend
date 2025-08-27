@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://krackenx.onrender.com';
 
 async function testCors() {
   console.log('🧪 Testing CORS Configuration\n');

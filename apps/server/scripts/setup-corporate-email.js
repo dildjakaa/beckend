@@ -64,7 +64,7 @@ SMTP_PASS=${appPassword}
 SMTP_FROM=${displayName} <${email}>
 
 # Frontend URL
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://krackenx.onrender.com
 
 # Database (PostgreSQL)
 DATABASE_URL=postgresql://username:password@localhost:5432/kracken_db

@@ -540,5 +540,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Visit http://localhost:${PORT} to access the messenger`);
+    console.log(`Visit https://krackenx.onrender.com to access the messenger`);
 });
