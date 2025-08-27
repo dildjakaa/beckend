@@ -1,4 +1,5 @@
 const { success } = require('../../utils/response');
+const { addCorsHeaders, handleCorsPreflight } = require('../../utils/cors');
 
 // In-memory log storage (in production you'd want to use a proper logging system)
 let serverLogs = [];
@@ -29,6 +30,12 @@ module.exports.addLog = addLog;
 module.exports.clearLogs = clearLogs;
 
 module.exports = async function handler(req, res) {
+  // Handle CORS preflight
+  if (handleCorsPreflight(req, res)) return;
+  
+  // Add CORS headers
+  addCorsHeaders(res);
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

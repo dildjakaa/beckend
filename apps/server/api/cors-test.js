@@ -8,13 +8,11 @@ module.exports = async function handler(req, res) {
   // Add CORS headers
   addCorsHeaders(res);
 
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   return success(res, {
-    pong: true,
+    message: 'CORS test successful',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    origin: req.headers.origin || 'No origin',
+    method: req.method,
+    headers: req.headers
   });
 };

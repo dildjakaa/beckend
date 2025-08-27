@@ -8,6 +8,7 @@ const cors = require('cors'); // Добавлено
 // API handlers
 const healthHandler = require('./api/health.js');
 const pingHandler = require('./api/ping.js');
+const corsTestHandler = require('./api/cors-test.js');
 const logsHandler = require('./api/admin/logs.js');
 const clearLogsHandler = require('./api/admin/clear-logs.js');
 const deleteMessagesHandler = require('./api/admin/delete-messages.js');
@@ -21,20 +22,72 @@ const server = createServer(app);
 
 // CORS middleware
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'https://krackenx.onrender.com',
+      'https://krackenx-c9gq.onrender.com',
+      'https://beckend-yaj1.onrender.com',
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // Temporarily allow all origins for debugging
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Password', 'X-Requested-With']
 }));
 const io = new Server(server, {
   cors: {
-    origin: true,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // List of allowed origins
+      const allowedOrigins = [
+        'https://krackenx.onrender.com',
+        'https://krackenx-c9gq.onrender.com',
+        'https://beckend-yaj1.onrender.com',
+      ];
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log('Socket.IO CORS blocked origin:', origin);
+        callback(null, true); // Temporarily allow all origins for debugging
+      }
+    },
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Password'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Password', 'X-Requested-With'],
     credentials: true
   }
 });
 
 // Middleware
 app.set('trust proxy', 1);
+
+// Additional CORS headers for all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Admin-Password');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 // Store connected users
@@ -63,6 +116,7 @@ app.get('/', (req, res) => {
 // Health and ping endpoints
 app.get('/api/health', healthHandler);
 app.get('/api/ping', pingHandler);
+app.get('/api/cors-test', corsTestHandler);
 
 // Admin endpoints
 app.get('/api/admin/logs', logsHandler);
