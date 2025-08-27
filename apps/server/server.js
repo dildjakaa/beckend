@@ -131,10 +131,154 @@ app.get('/api/auth/github', (req, res) => {
     if (!clientId) {
         return res.status(500).json({ error: 'GitHub Client ID not configured' });
     }
-    const redirectUri = process.env.GITHUB_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/github/callback`;
+    // Use different callback URLs for Electron and web
+    const isElectron = req.query.client === 'electron';
+    const redirectUri = isElectron 
+        ? `${req.protocol}://${req.get('host')}/api/auth/github/electron-callback`
+        : (process.env.GITHUB_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/github/callback`);
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
     
     res.redirect(githubAuthUrl);
+});
+
+// Special endpoint for Electron to get GitHub OAuth token
+app.get('/api/auth/github/electron-callback', async (req, res) => {
+    const { code } = req.query;
+    
+    if (!code) {
+        return res.status(400).json({ success: false, error: 'No authorization code provided' });
+    }
+    
+    try {
+        // Exchange code for access token
+        const axios = require('axios');
+        const tokenResponse = await axios.post('https://github.com/login/oauth/access_token', {
+            client_id: process.env.GITHUB_CLIENT_ID,
+            client_secret: process.env.GITHUB_CLIENT_SECRET,
+            code: code
+        }, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        const { access_token } = tokenResponse.data;
+
+        if (!access_token) {
+            console.error('Failed to get access token:', tokenResponse.data);
+            return res.status(400).json({ success: false, error: 'Failed to get access token' });
+        }
+
+        // Get user data from GitHub
+        const userResponse = await axios.get('https://api.github.com/user', {
+            headers: {
+                'Authorization': `token ${access_token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+
+        // Get user emails
+        let emails = [];
+        try {
+            const emailsResponse = await axios.get('https://api.github.com/user/emails', {
+                headers: {
+                    'Authorization': `token ${access_token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            emails = emailsResponse.data || [];
+        } catch (e) {
+            emails = [];
+        }
+
+        const userData = userResponse.data;
+        const primaryEmail = emails.find(email => email.primary)?.email || emails[0]?.email;
+
+        // Check if user already exists
+        db.get(
+            'SELECT * FROM users WHERE github_id = ?',
+            [userData.id.toString()],
+            async (err, existingUser) => {
+                if (err) {
+                    console.error('Error checking existing user:', err);
+                    return res.status(500).json({ success: false, error: 'Database error' });
+                }
+
+                if (existingUser) {
+                    // User exists, update last seen
+                    db.run(
+                        'UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?',
+                        [existingUser.id],
+                        (updateErr) => {
+                            if (updateErr) {
+                                console.error('Error updating user:', updateErr);
+                            }
+                            
+                            // Generate JWT token
+                            const jwt = require('jsonwebtoken');
+                            const token = jwt.sign(
+                                { userId: existingUser.id, username: existingUser.username },
+                                process.env.JWT_SECRET || 'your-secret-key',
+                                { expiresIn: '7d' }
+                            );
+                            
+                            // For Electron, redirect to success page with token
+                            res.redirect(`/electron-callback.html?token=${token}`);
+                        }
+                    );
+                } else {
+                    // Create new user
+                    const username = userData.login || `github_${userData.id}`;
+                    const avatarUrl = userData.avatar_url;
+                    
+                    db.run(
+                        `INSERT INTO users (username, email, github_id, avatar_url, email_verified, is_oauth_user) 
+                         VALUES (?, ?, ?, ?, 1, 1)`,
+                        [username, primaryEmail, userData.id.toString(), avatarUrl],
+                        function(insertErr) {
+                            if (insertErr) {
+                                console.error('Error creating GitHub user:', insertErr);
+                                return res.status(500).json({ success: false, error: 'Failed to create user' });
+                            }
+                            
+                            // Add user to general chat room
+                            db.run(
+                                'INSERT OR IGNORE INTO chat_room_participants (room_id, user_id) VALUES (?, ?)',
+                                [1, this.lastID],
+                                (participantErr) => {
+                                    if (participantErr) {
+                                        console.error('Error adding user to chat room:', participantErr);
+                                    }
+                                    
+                                    // Send welcome email
+                                    const { sendWelcomeEmail } = require('./utils/email');
+                                    if (primaryEmail) {
+                                        sendWelcomeEmail(primaryEmail, username).catch(emailErr => {
+                                            console.error('Error sending welcome email:', emailErr);
+                                        });
+                                    }
+                                    
+                                    // Generate JWT token
+                                    const jwt = require('jsonwebtoken');
+                                    const token = jwt.sign(
+                                        { userId: this.lastID, username: username },
+                                        process.env.JWT_SECRET || 'your-secret-key',
+                                        { expiresIn: '7d' }
+                                    );
+                                    
+                                    // For Electron, redirect to success page with token
+                                    res.redirect(`/electron-callback.html?token=${token}`);
+                                }
+                            );
+                        }
+                    );
+                }
+            }
+        );
+    } catch (error) {
+        console.error('GitHub OAuth error:', error);
+        res.status(500).json({ success: false, error: 'OAuth error' });
+    }
 });
 
 app.get('/api/auth/github/callback', async (req, res) => {
@@ -218,7 +362,17 @@ app.get('/api/auth/github/callback', async (req, res) => {
                                 { expiresIn: '7d' }
                             );
                             
-                            res.redirect(`/?token=${token}`);
+                            // Check if this is an Electron request
+                            const userAgent = req.headers['user-agent'] || '';
+                            const isElectron = userAgent.includes('Electron') || req.query.client === 'electron';
+                            
+                            if (isElectron) {
+                                // For Electron, return JSON response instead of redirect
+                                res.json({ success: true, token: token });
+                            } else {
+                                // For web, redirect as usual
+                                res.redirect(`/?token=${token}`);
+                            }
                         }
                     );
                 } else {
@@ -261,7 +415,17 @@ app.get('/api/auth/github/callback', async (req, res) => {
                                         { expiresIn: '7d' }
                                     );
                                     
-                                    res.redirect(`/?token=${token}`);
+                                    // Check if this is an Electron request
+                                    const userAgent = req.headers['user-agent'] || '';
+                                    const isElectron = userAgent.includes('Electron') || req.query.client === 'electron';
+                                    
+                                    if (isElectron) {
+                                        // For Electron, return JSON response instead of redirect
+                                        res.json({ success: true, token: token });
+                                    } else {
+                                        // For web, redirect as usual
+                                        res.redirect(`/?token=${token}`);
+                                    }
                                 }
                             );
                         }
