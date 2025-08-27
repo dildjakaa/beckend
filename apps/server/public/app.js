@@ -343,26 +343,30 @@ function switchChat(room) {
 socket.on('connect', () => {
   console.log('Connected to server');
   isConnected = true;
+  try {
+    // Auto-authenticate on (re)connect if we have a stored token
+    if (!currentUser) {
+      const storedToken = localStorage.getItem('accessToken');
+      if (storedToken) {
+        socket.emit('authenticate_with_token', { token: storedToken });
+      }
+    }
+  } catch (_) {}
 });
 
 socket.on('disconnect', (reason) => {
-  console.log('Disconnected from server. Reason:', reason);
+  try {
+    const hasToken = !!localStorage.getItem('accessToken');
+    console.log('Disconnected from server. Reason:', reason, 'hasToken:', hasToken, 'hadUser:', !!currentUser);
+  } catch (_) {
+    console.log('Disconnected from server. Reason:', reason);
+  }
   isConnected = false;
   
   // Check if this is an unexpected disconnect (not user-initiated)
   if (reason === 'io server disconnect' || reason === 'transport close') {
     showStatus('Connection lost. Reconnecting...', 'error');
-    
-    // If user is logged in, show them they've been disconnected
-    if (currentUser) {
-      // Reset UI to login state after a delay to allow for reconnection
-      setTimeout(() => {
-        if (!socket.connected) {
-          console.log('Firefox disconnect detected, resetting to login');
-          resetToLogin();
-        }
-      }, 3000);
-    }
+    // Do not reset UI immediately; allow auto re-auth on reconnect if token exists
   } else {
     showStatus('Disconnected from server', 'error');
   }
@@ -484,8 +488,9 @@ socket.on('room_joined', (data) => {
   }
 });
 
-socket.on('error', (data) => {
-  showStatus(data.message || 'An error occurred', 'error');
+// Handle server-side errors without triggering socket.io reserved error semantics
+socket.on('server_error', (data) => {
+  showStatus(data && data.message ? data.message : 'An error occurred', 'error');
 });
 
 // Form Event Handlers
@@ -548,6 +553,7 @@ if (registerForm) {
     const email = regEmailInput ? regEmailInput.value.trim() : '';
     const password = regPasswordInput ? regPasswordInput.value : '';
     const passwordConfirm = regPasswordConfirmInput ? regPasswordConfirmInput.value : '';
+    const tosAccepted = document.getElementById('regTos') ? document.getElementById('regTos').checked : false;
     
     // Validation
     if (!username || !email || !password || !passwordConfirm) {
@@ -575,6 +581,11 @@ if (registerForm) {
       return;
     }
     
+    if (!tosAccepted) {
+      showStatus('Нужно принять условия соглашения и политику конфиденциальности', 'error');
+      return;
+    }
+    
     // Disable form while processing
     const submitButton = registerForm.querySelector('button');
     if (!submitButton) {
@@ -591,7 +602,7 @@ if (registerForm) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ username, email, password })
+    body: JSON.stringify({ username, email, password, tosAccepted: true })
   })
   .then(response => response.json())
   .then(data => {
@@ -901,6 +912,16 @@ document.addEventListener('DOMContentLoaded', () => {
       socket.emit('authenticate_with_token', { token });
     }
   } catch (_) {}
+
+  // If there's already a stored token (e.g., username/password or previous OAuth), try to auto-login
+  try {
+    if (!currentUser) {
+      const storedToken = localStorage.getItem('accessToken');
+      if (storedToken) {
+        socket.emit('authenticate_with_token', { token: storedToken });
+      }
+    }
+  } catch (_) {}
 });
 
 // Handle connection errors
@@ -914,6 +935,13 @@ socket.on('reconnect', (attemptNumber) => {
   console.log('Reconnected to server');
   showStatus('Reconnected to server', 'success');
   isConnected = true;
+  // Ensure authentication is restored on reconnect
+  try {
+    const storedToken = localStorage.getItem('accessToken');
+    if (storedToken) {
+      socket.emit('authenticate_with_token', { token: storedToken });
+    }
+  } catch (_) {}
 });
 
 socket.on('reconnecting', (attemptNumber) => {

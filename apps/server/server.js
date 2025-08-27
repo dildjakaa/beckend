@@ -2,9 +2,19 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const cors = require('cors'); // Добавлено
+
+// API handlers
+const healthHandler = require('./api/health.js');
+const pingHandler = require('./api/ping.js');
+const logsHandler = require('./api/admin/logs.js');
+const clearLogsHandler = require('./api/admin/clear-logs.js');
+const deleteMessagesHandler = require('./api/admin/delete-messages.js');
+const deleteUsersHandler = require('./api/admin/delete-users.js');
+
+// Database
+const db = require('./utils/database.js');
 
 const app = express();
 const server = createServer(app);
@@ -21,64 +31,6 @@ const io = new Server(server, {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Password'],
     credentials: true
   }
-});
-
-// SQLite database
-const db = new sqlite3.Database(':memory:');
-
-// Initialize database
-db.serialize(() => {
-    // Users table
-    db.run(`CREATE TABLE users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT,
-        email TEXT UNIQUE,
-        github_id TEXT UNIQUE,
-        avatar_url TEXT,
-        email_verified INTEGER DEFAULT 0,
-        verification_code TEXT,
-        verification_code_expires DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
-        is_oauth_user INTEGER DEFAULT 0
-    )`);
-    
-    // Chat rooms table
-    db.run(`CREATE TABLE chat_rooms (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        room_type TEXT DEFAULT 'general',
-        created_by INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(created_by) REFERENCES users(id)
-    )`);
-    
-    // Messages table  
-    db.run(`CREATE TABLE messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        room_id INTEGER NOT NULL DEFAULT 1,
-        content TEXT NOT NULL,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(room_id) REFERENCES chat_rooms(id)
-    )`);
-    
-    // Chat room participants
-    db.run(`CREATE TABLE chat_room_participants (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        room_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(room_id) REFERENCES chat_rooms(id),
-        FOREIGN KEY(user_id) REFERENCES users(id),
-        UNIQUE(room_id, user_id)
-    )`);
-    
-    // Insert default general room
-    db.run("INSERT INTO chat_rooms (id, name, room_type) VALUES (1, 'General Chat', 'general')");
 });
 
 // Middleware
@@ -107,6 +59,16 @@ function broadcastOnlineUsers() {
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// Health and ping endpoints
+app.get('/api/health', healthHandler);
+app.get('/api/ping', pingHandler);
+
+// Admin endpoints
+app.get('/api/admin/logs', logsHandler);
+app.post('/api/admin/clear-logs', clearLogsHandler);
+app.post('/api/admin/delete-messages', deleteMessagesHandler);
+app.post('/api/admin/delete-users', deleteUsersHandler);
 
 // GitHub OAuth endpoint
 app.get('/api/auth/github', (req, res) => {
@@ -727,7 +689,8 @@ io.on('connection', (socket) => {
             [userInfo.userId, targetRoomId, content.trim()],
             function(err) {
                 if (err) {
-                    socket.emit('error', { message: 'Failed to send message' });
+                    // Use a custom event name instead of reserved 'error'
+                    socket.emit('server_error', { message: 'Failed to send message' });
                     return;
                 }
                 

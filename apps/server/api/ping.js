@@ -6,8 +6,8 @@ module.exports = async function handler(req, res) {
   }
 
   return success(res, {
-    status: 'ok',
+    pong: true,
     timestamp: new Date().toISOString(),
-    service: 'browser-messenger'
+    uptime: process.uptime()
   });
 };
