@@ -51,7 +51,7 @@ async function setupCorporateEmail() {
     const envContent = `# GitHub OAuth Configuration
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
-GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
+GITHUB_CALLBACK_URL=https://beckend-yaj1.onrender.com/api/auth/github/callback
 
 # JWT Configuration
 JWT_SECRET=your_super_secret_jwt_key_here

@@ -9,7 +9,7 @@ export default async function handler(req, res) {
         const config = {
             githubClientId: process.env.GITHUB_CLIENT_ID ? '✅ Настроен' : '❌ Не настроен',
             githubClientSecret: process.env.GITHUB_CLIENT_SECRET ? '✅ Настроен' : '❌ Не настроен',
-            githubCallbackUrl: process.env.GITHUB_CALLBACK_URL || 'http://localhost:3000/api/auth/github/callback',
+            githubCallbackUrl: process.env.GITHUB_CALLBACK_URL || 'https://beckend-yaj1.onrender.com/api/auth/github/callback',
             jwtSecret: process.env.JWT_SECRET ? '✅ Настроен' : '❌ Не настроен',
             environment: process.env.NODE_ENV || 'development'
         };

@@ -1,7 +1,7 @@
 // Simple test script for API endpoints
 const http = require('http');
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = 'https://beckend-yaj1.onrender.com';
 
 function makeRequest(method, path, data = null) {
   return new Promise((resolve, reject) => {

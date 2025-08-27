@@ -145,7 +145,7 @@ async function sendVerificationEmail(email, username, code) {
  * @param {string} resetToken - Password reset token
  */
 async function sendPasswordResetEmail(email, username, resetToken) {
-  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.FRONTEND_URL || 'https://beckend-yaj1.onrender.com'}/reset-password?token=${resetToken}`;
   
   const mailOptions = {
     from: process.env.SMTP_FROM || `"Kracken Messenger" <${process.env.SMTP_USER}>`,

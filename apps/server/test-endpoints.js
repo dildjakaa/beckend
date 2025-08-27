@@ -2,7 +2,7 @@
 
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://krackenx-c9gq.onrender.com';
 
 async function testEndpoint(method, path, data = null, headers = {}) {
   try {
