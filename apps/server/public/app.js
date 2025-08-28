@@ -439,9 +439,10 @@ socket.on('new_message', (messageData) => {
   if (chatItem) {
     const lastMessageEl = chatItem.querySelector('.chat-last-message');
     if (lastMessageEl) {
-      lastMessageEl.textContent = messageData.content.length > 30 
-        ? messageData.content.substring(0, 30) + '...' 
-        : messageData.content;
+      const contentText = (messageData && messageData.content != null) ? String(messageData.content) : '';
+      lastMessageEl.textContent = contentText.length > 30 
+        ? contentText.substring(0, 30) + '...'
+        : contentText;
     }
   }
 });
