@@ -131,6 +131,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Health check endpoint for Render
+app.get('/api', (req, res) => {
+    res.json({ success: true, message: 'OK' });
+});
+
 // API Routes
 app.post('/api/auth/register', registerHandler);
 app.post('/api/auth/verify-email', verifyEmailHandler);

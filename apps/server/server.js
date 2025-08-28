@@ -3,7 +3,7 @@ const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { query, initializeDatabase } = require('./utils/db_test');
+const { query } = require('./utils/db.js');
 
 const app = express();
 const server = createServer(app);
@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 // Import API routes
-const registerHandler = require('./api/auth/register_test.js');
+const registerHandler = require('./api/auth/register.js');
 const verifyEmailHandler = require('./api/auth/verify-email.js');
 const loginEmailVerifyHandler = require('./api/auth/login-email-verify.js');
 const resendCodeHandler = require('./api/auth/resend-code.js');
@@ -42,12 +42,16 @@ function broadcastOnlineUsers() {
 
 
 
-// Initialize database on startup
-// initializeDatabase(); // Temporarily disabled for testing
+// Initialize database on startup (Postgres boot migrations run on first query)
 
 // Serve main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Health check endpoint for Render
+app.get('/api', (req, res) => {
+    res.json({ success: true, message: 'OK' });
 });
 
 // Health and ping endpoints
@@ -677,19 +681,7 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Initialize database and start server
-async function startServer() {
-    try {
-        await initializeDatabase();
-        console.log('Database initialized successfully');
-        
+// Start server (Postgres migrations are lazy-initialized)
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-        });
-    } catch (error) {
-        console.error('Failed to initialize database:', error);
-        process.exit(1);
-    }
-}
-
-startServer();
+});

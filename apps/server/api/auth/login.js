@@ -1,6 +1,7 @@
 const { query } = require('../../utils/db.js');
 const { comparePassword } = require('../../utils/hash.js');
 const { success, badRequest, unauthorized, serverError } = require('../../utils/response.js');
+const jwt = require('jsonwebtoken');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -8,17 +9,19 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { username, password } = req.body;
+    const { username, email, password } = req.body;
 
     // Validate input
-    if (!username || !password) {
-      return badRequest(res, 'Имя пользователя и пароль обязательны');
+    if ((!username && !email) || !password) {
+      return badRequest(res, 'Имя пользователя или email и пароль обязательны');
     }
 
     // Find user
+    const lookupBy = username ? 'username' : 'email';
+    const value = username || email;
     const userResult = await query(
-      'SELECT id, username, password_hash, avatar_url, email, email_verified, created_at, last_seen FROM users WHERE username = $1',
-      [username]
+      `SELECT id, username, password_hash, avatar_url, email, email_verified, created_at, last_seen, is_oauth_user FROM users WHERE ${lookupBy} = $1`,
+      [value]
     );
 
     if (userResult.rows.length === 0) {
@@ -59,17 +62,14 @@ module.exports = async function handler(req, res) {
       [1, user.id]
     );
 
-    return success(res, {
-      user: {
-        id: user.id,
-        username: user.username,
-        avatar_url: user.avatar_url,
-        email: user.email,
-        email_verified: user.email_verified,
-        created_at: user.created_at,
-        last_seen: user.last_seen
-      }
-    });
+    // Issue JWT token for client to store and use over sockets
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    return success(res, { token });
 
   } catch (error) {
     console.error('Login error:', error);

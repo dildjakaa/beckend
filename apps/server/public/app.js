@@ -644,7 +644,7 @@ if (emailVerificationForm) {
     e.preventDefault();
     
     const code = verificationCodeInput ? verificationCodeInput.value.trim() : '';
-    const emailForVerification = verificationEmailSpan ? verificationEmailSpan.textContent : '';
+    const emailForVerification = verificationEmailSpan ? verificationEmailSpan.textContent.trim() : '';
     
     if (!code || code.length !== 6) {
       showStatus('Пожалуйста, введите 6-значный код', 'error');
@@ -664,7 +664,8 @@ if (emailVerificationForm) {
   // Determine flow: login vs registration
   const isLoginFlow = emailLoginContext.email && emailLoginContext.email.toLowerCase() === (emailForVerification || '').toLowerCase();
   const url = isLoginFlow ? '/api/auth/login-email-verify' : '/api/auth/verify-email';
-  const payload = isLoginFlow ? { email: emailForVerification, code } : { code };
+  // Send email alongside code for registration flow too, to disambiguate on server
+  const payload = isLoginFlow ? { email: emailForVerification, code } : { code, email: emailForVerification };
 
   // Send verification request
   fetch(url, {
