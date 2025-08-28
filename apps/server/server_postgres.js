@@ -131,7 +131,7 @@ async function initializeDatabase() {
 }
 
 // Initialize database on startup
-// initializeDatabase(); // Temporarily disabled for testing
+// initializeDatabase(); // Disabled for local development - using Render database
 
 // Serve main page
 app.get('/', (req, res) => {
@@ -414,14 +414,9 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Ensure database schema exists before starting the server
-initializeDatabase()
-  .catch((err) => {
-    console.error('Failed to initialize database:', err);
-    process.exit(1);
-  })
-  .finally(() => {
-    server.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-  });
+// Start server without waiting for database initialization
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log('Note: Database initialization is disabled for local development');
+    console.log('Using Render database:', process.env.DATABASE_URL ? 'Yes' : 'No');
+});
