@@ -16,6 +16,7 @@ app.use(express.json());
 // Import API routes
 const registerHandler = require('./api/auth/register.js');
 const verifyEmailHandler = require('./api/auth/verify-email.js');
+const loginEmailVerifyHandler = require('./api/auth/login-email-verify.js');
 const resendCodeHandler = require('./api/auth/resend-code.js');
 const loginHandler = require('./api/auth/login.js');
 
@@ -57,6 +58,18 @@ async function initializeDatabase() {
                 last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 is_oauth_user BOOLEAN DEFAULT FALSE
             )
+        `);
+
+        // Ensure required columns exist on existing databases
+        await query(`
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE,
+            ADD COLUMN IF NOT EXISTS github_id VARCHAR(255) UNIQUE,
+            ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10),
+            ADD COLUMN IF NOT EXISTS verification_code_expires TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS is_oauth_user BOOLEAN DEFAULT FALSE;
         `);
 
         // Create chat_rooms table
@@ -121,6 +134,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.post('/api/auth/register', registerHandler);
 app.post('/api/auth/verify-email', verifyEmailHandler);
+app.post('/api/auth/login-email-verify', loginEmailVerifyHandler);
 app.post('/api/auth/resend-code', resendCodeHandler);
 app.post('/api/auth/login', loginHandler);
 
@@ -219,6 +233,15 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+
+// Ensure database schema exists before starting the server
+initializeDatabase()
+  .catch((err) => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  })
+  .finally(() => {
+    server.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+  });

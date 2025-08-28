@@ -438,7 +438,9 @@ socket.on('token_auth_error', (data) => {
 });
 
 socket.on('new_message', (messageData) => {
-  const isOwnMessage = currentUser && messageData.userId === currentUser.id;
+  const incomingUserId = (messageData && (messageData.userId ?? messageData.user_id));
+  const currentId = currentUser ? (currentUser.id ?? currentUser.userId) : null;
+  const isOwnMessage = currentId != null && String(incomingUserId) === String(currentId);
   addMessage(messageData, isOwnMessage);
   
   // Update last message in chat list
@@ -484,7 +486,9 @@ socket.on('room_joined', (data) => {
     if (data.messages && data.messages.length > 0) {
       messagesDiv.innerHTML = '';
       data.messages.forEach(msg => {
-        const isOwnMessage = currentUser && msg.user_id === currentUser.id;
+        const incomingUserId = (msg && (msg.user_id ?? msg.userId));
+        const currentId = currentUser ? (currentUser.id ?? currentUser.userId) : null;
+        const isOwnMessage = currentId != null && String(incomingUserId) === String(currentId);
         addMessage({
           username: msg.username,
           content: msg.content,
