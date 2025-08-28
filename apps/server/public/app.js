@@ -539,8 +539,9 @@ if (loginForm) {
     })
     .then(r => r.json())
     .then(data => {
-      if (data.success && data.token) {
-        localStorage.setItem('accessToken', data.token);
+      const token = data && (data.token || (data.data && data.data.token));
+      if (data.success && token) {
+        localStorage.setItem('accessToken', token);
         socket.emit('authenticate_with_token', { token: data.token });
       } else {
         showStatus(data.error || 'Ошибка входа', 'error');
