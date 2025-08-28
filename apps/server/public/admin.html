@@ -3,128 +3,683 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kracken Admin & API Tester</title>
+  <title>Kracken Pro Admin Dashboard</title>
   <style>
     :root {
-      --bg: #0f172a;
+      --bg: #0a0e1a;
+      --bg-secondary: #0f172a;
       --panel: #111827;
+      --panel-hover: #1f2937;
       --muted: #94a3b8;
       --text: #e2e8f0;
+      --text-bright: #f8fafc;
       --accent: #22c55e;
+      --accent-hover: #16a34a;
       --warn: #eab308;
       --danger: #ef4444;
+      --danger-hover: #dc2626;
       --link: #60a5fa;
       --input: #0b1220;
       --border: #1f2937;
+      --border-light: #374151;
       --ok: #16a34a;
       --bad: #dc2626;
+      --info: #3b82f6;
+      --purple: #8b5cf6;
+      --orange: #f59e0b;
+      --cyan: #06b6d4;
     }
+    
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { height: 100%; margin: 0; }
     body {
-      margin: 0;
-      background: var(--bg);
+      background: linear-gradient(135deg, var(--bg) 0%, var(--bg-secondary) 100%);
       color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      line-height: 1.4;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
     }
-    a { color: var(--link); text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    
+    .animated { transition: all 0.3s ease; }
+    .glow { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    
     header {
-      position: sticky; top: 0; z-index: 10;
-      background: linear-gradient(180deg, rgba(17,24,39,0.8), rgba(17,24,39,0.6));
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 32px rgba(0,0,0,0.3);
+    }
+    
+    .header-content {
+      max-width: 1600px; margin: 0 auto; padding: 16px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    
+    .logo {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 24px; font-weight: 700; color: var(--text-bright);
+    }
+    
+    .logo::before {
+      content: '⚡'; font-size: 32px;
+      background: linear-gradient(45deg, var(--accent), var(--cyan));
+      background-clip: text; -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.5));
+    }
+    
+    .header-stats {
+      display: flex; gap: 20px; align-items: center;
+    }
+    
+    .stat-badge {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      font-size: 14px; font-weight: 500;
+    }
+    
+    .live-indicator {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.5s infinite;
+    }
+    
+    .main-container {
+      max-width: 1600px; margin: 0 auto; padding: 24px;
+      display: grid; gap: 24px;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    
+    .wide-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    
+    .full-width { grid-column: 1 / -1; }
+    
+    .card {
+      background: linear-gradient(135deg, var(--panel) 0%, rgba(31, 41, 55, 0.8) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
       backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--cyan), var(--purple));
+      opacity: 0.6;
+    }
+    
+    .card:hover {
+      border-color: var(--border-light);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+    }
+    
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; padding-bottom: 12px;
       border-bottom: 1px solid var(--border);
     }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
-    h1 { margin: 0; font-size: 20px; }
-    .grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
-    .card {
-      grid-column: span 12;
-      background: var(--panel);
+    
+    .card-title {
+      font-size: 18px; font-weight: 600; color: var(--text-bright);
+      display: flex; align-items: center; gap: 10px;
+    }
+    
+    .card-icon {
+      font-size: 20px; opacity: 0.8;
+    }
+    
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 16px;
+    }
+    
+    .metric {
+      text-align: center; padding: 16px; border-radius: 12px;
+      background: rgba(255,255,255,0.03);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
+      transition: all 0.3s ease;
     }
-    @media (min-width: 900px) {
-      .span-6 { grid-column: span 6; }
-      .span-4 { grid-column: span 4; }
-      .span-8 { grid-column: span 8; }
+    
+    .metric:hover {
+      background: rgba(255,255,255,0.05);
+      transform: scale(1.02);
     }
-    .card h2 { margin: 0 0 10px; font-size: 16px; }
-    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .col { display: flex; flex-direction: column; gap: 6px; }
-    label { color: var(--muted); font-size: 12px; }
+    
+    .metric-value {
+      font-size: 28px; font-weight: 700; color: var(--accent);
+      display: block; line-height: 1;
+    }
+    
+    .metric-label {
+      font-size: 12px; color: var(--muted); margin-top: 4px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    
+    .form-group {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .form-row {
+      display: flex; gap: 12px; align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    
+    label {
+      color: var(--muted); font-size: 13px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    
     input, select, textarea {
       background: var(--input);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
+      border-radius: 10px;
+      padding: 12px 16px;
       font-size: 14px;
       outline: none;
-      width: 100%;
+      transition: all 0.3s ease;
     }
-    textarea { min-height: 120px; resize: vertical; }
-    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    pre {
-      margin: 0; padding: 12px; border-radius: 8px; overflow: auto;
-      background: #0a0f1a; border: 1px solid var(--border);
+    
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+      background: rgba(11, 18, 32, 0.8);
     }
+    
+    textarea {
+      min-height: 120px; resize: vertical;
+      font-family: 'Monaco', 'Menlo', monospace;
+    }
+    
     .btn {
-      background: #0b1a10;
-      color: var(--accent);
-      border: 1px solid rgba(34,197,94,0.25);
-      padding: 10px 14px; border-radius: 10px; cursor: pointer; font-weight: 600;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
     }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn.warn { background: #1a170b; color: var(--warn); border-color: rgba(234,179,8,0.25); }
-    .btn.danger { background: #1a0b0b; color: var(--danger); border-color: rgba(239,68,68,0.25); }
-    .stat { display: inline-flex; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: 999px; background: #0a0f1a; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-    .dot.ok { background: var(--ok); box-shadow: 0 0 12px rgba(22,163,74,0.6); }
-    .dot.bad { background: var(--bad); box-shadow: 0 0 12px rgba(220,38,38,0.6); }
-    .muted { color: var(--muted); }
-    .hr { height: 1px; background: var(--border); margin: 12px 0; }
-    .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); background: #0a0f1a; font-size: 12px; }
-    .kvs { display: grid; grid-template-columns: 160px 1fr; gap: 6px 12px; }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .btn.secondary {
+      background: linear-gradient(135deg, var(--panel-hover) 0%, var(--border) 100%);
+      color: var(--text);
+    }
+    
+    .btn.warn {
+      background: linear-gradient(135deg, var(--warn) 0%, #d97706 100%);
+    }
+    
+    .btn.warn:hover {
+      box-shadow: 0 8px 25px rgba(234, 179, 8, 0.3);
+    }
+    
+    .btn.danger {
+      background: linear-gradient(135deg, var(--danger) 0%, var(--danger-hover) 100%);
+    }
+    
+    .btn.danger:hover {
+      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+    }
+    
+    .btn.info {
+      background: linear-gradient(135deg, var(--info) 0%, #2563eb 100%);
+    }
+    
+    .status-indicator {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-radius: 25px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      font-weight: 500;
+    }
+    
+    .status-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      position: relative;
+    }
+    
+    .status-dot.online {
+      background: var(--ok);
+      box-shadow: 0 0 12px rgba(22, 163, 74, 0.6);
+    }
+    
+    .status-dot.offline {
+      background: var(--bad);
+      box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
+    }
+    
+    .status-dot.warning {
+      background: var(--warn);
+      box-shadow: 0 0 12px rgba(234, 179, 8, 0.6);
+    }
+    
+    .code-block {
+      background: #0a0f1a;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      overflow: auto;
+      max-height: 400px;
+      position: relative;
+    }
+    
+    .code-block.scrollable {
+      max-height: 300px;
+    }
+    
+    .response-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .response-stat {
+      text-align: center;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+    }
+    
+    .response-stat-value {
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    .response-stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    
+    .tab:hover {
+      color: var(--text);
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .log-time {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: monospace;
+      min-width: 80px;
+    }
+    
+    .log-level {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      min-width: 50px;
+      text-align: center;
+    }
+    
+    .log-level.info { background: var(--info); color: white; }
+    .log-level.warn { background: var(--warn); color: white; }
+    .log-level.error { background: var(--danger); color: white; }
+    .log-level.success { background: var(--ok); color: white; }
+    
+    .chart-container {
+      height: 200px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--cyan));
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    
+    .alert {
+      padding: 16px;
+      border-radius: 12px;
+      border-left: 4px solid;
+      margin: 16px 0;
+    }
+    
+    .alert.success {
+      background: rgba(22, 163, 74, 0.1);
+      border-color: var(--ok);
+      color: #86efac;
+    }
+    
+    .alert.warning {
+      background: rgba(234, 179, 8, 0.1);
+      border-color: var(--warn);
+      color: #fde047;
+    }
+    
+    .alert.error {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: var(--danger);
+      color: #fca5a5;
+    }
+    
+    .ws-message {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 12px;
+      margin: 4px 0;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    
+    .ws-message.sent {
+      background: rgba(34, 197, 94, 0.1);
+      border-left: 3px solid var(--accent);
+    }
+    
+    .ws-message.received {
+      background: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid var(--info);
+    }
+    
+    .ws-message.system {
+      background: rgba(156, 163, 175, 0.1);
+      border-left: 3px solid var(--muted);
+    }
+    
+    .quick-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .performance-ring {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: conic-gradient(var(--accent) 0deg, var(--accent) var(--angle, 0deg), rgba(255,255,255,0.1) var(--angle, 0deg));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--text-bright);
+    }
+    
+    @media (max-width: 768px) {
+      .main-container { padding: 16px; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .wide-grid { grid-template-columns: 1fr; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .header-stats { display: none; }
+    }
+    
+    .tooltip {
+      position: relative;
+    }
+    
+    .tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    }
+    
+    .tooltip:hover::after {
+      opacity: 1;
+    }
+
+    .admin-warning {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .request-history {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin: 4px 0;
+      background: rgba(255,255,255,0.02);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .history-item:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .method-badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .method-get { background: var(--info); }
+    .method-post { background: var(--ok); }
+    .method-put { background: var(--warn); }
+    .method-delete { background: var(--danger); }
   </style>
 </head>
 <body>
   <header>
-    <div class="wrap row" style="justify-content: space-between;">
-      <h1>⚡ Kracken Admin & Tester</h1>
-      <div class="row">
-        <span class="muted">Прод сервер:</span>
-        <a href="https://krackenx.onrender.com/" target="_blank" rel="noreferrer">krackenx.onrender.com</a>
+    <div class="header-content">
+      <div class="logo">
+        Kracken Pro Admin
+      </div>
+      <div class="header-stats">
+        <div class="stat-badge">
+          <div class="live-indicator"></div>
+          Live Monitoring
+        </div>
+        <div class="stat-badge">
+          <span>Сервер:</span>
+          <span id="headerServerStatus">—</span>
+        </div>
+        <div class="stat-badge">
+          <span>Uptime:</span>
+          <span id="uptimeCounter">—</span>
+        </div>
       </div>
     </div>
   </header>
 
-  <main class="wrap">
-    <div class="grid">
-      <section class="card span-4" id="serverCheck">
-        <h2>Чек сервера</h2>
-        <div class="col">
-          <div class="row" style="justify-content: space-between;">
-            <div class="row stat"><span class="dot" id="statusDot"></span><span id="statusText">Неизвестно</span></div>
-            <button class="btn" id="btnPing">Пинг</button>
-          </div>
-          <div class="kvs">
-            <div class="muted">База URL</div>
-            <div class="row"><input id="baseUrl" value="https://krackenx.onrender.com" /></div>
-            <div class="muted">Health</div>
-            <div class="row"><code>/api/health</code> <button class="btn" id="btnHealth">Проверить</button></div>
-          </div>
-          <div class="hr"></div>
-          <label>Ответ</label>
-          <pre id="healthOut">—</pre>
+  <main class="main-container">
+    <!-- Server Status & Monitoring -->
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">📊</span>
+            Мониторинг сервера
+          </h2>
+          <button class="btn secondary" id="autoRefreshBtn">Auto Refresh: OFF</button>
         </div>
-      </section>
+        <div class="metric-grid">
+          <div class="metric tooltip" data-tooltip="Статус подключения">
+            <div class="status-indicator">
+              <div class="status-dot" id="mainStatusDot"></div>
+              <span id="mainStatusText">Проверка...</span>
+            </div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="responseTimeMetric">—</span>
+            <div class="metric-label">Время ответа (мс)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="requestsCountMetric">0</span>
+            <div class="metric-label">Всего запросов</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="errorsCountMetric">0</span>
+            <div class="metric-label">Ошибок</div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Базовый URL сервера</label>
+          <div class="form-row">
+            <input id="baseUrl" value="https://krackenx.onrender.com" style="flex: 1;" />
+            <button class="btn info" id="btnPing">🔄 Пинг</button>
+            <button class="btn" id="btnHealth">💚 Health Check</button>
+          </div>
+        </div>
+        
+        <div class="code-block" id="healthResponse">Ожидание проверки...</div>
+      </div>
 
-      <section class="card span-8" id="apiTester">
-        <h2>Тест API</h2>
-        <div class="row">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">⚡</span>
+            Быстрые действия
+          </h2>
+        </div>
+        <div class="quick-actions">
+          <button class="btn secondary" id="btnQuickGet">GET /health</button>
+          <button class="btn secondary" id="btnQuickAuth">Test Auth</button>
+          <button class="btn warn" id="btnQuickWs">Connect WS</button>
+          <button class="btn info" id="btnClearAll">Clear All</button>
+        </div>
+        
+        <div class="alert success" style="margin-top: 16px;">
+          <strong>💡 Совет:</strong> Используйте автообновление для мониторинга в реальном времени
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced API Tester -->
+    <div class="card full-width">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="card-icon">🔧</span>
+          Расширенный API тестер
+        </h2>
+        <div class="quick-actions">
+          <button class="btn secondary" id="btnSaveRequest">💾 Сохранить</button>
+          <button class="btn secondary" id="btnLoadRequest">📂 Загрузить</button>
+          <button class="btn info" id="btnFormatJson">✨ Форматировать</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="request">Запрос</div>
+        <div class="tab" data-tab="response">Ответ</div>
+        <div class="tab" data-tab="history">История</div>
+      </div>
+
+      <div class="tab-content active" id="request-tab">
+        <div class="form-row" style="margin-bottom: 16px;">
           <select id="reqMethod" style="max-width: 120px;">
             <option>GET</option>
             <option>POST</option>
@@ -132,380 +687,896 @@
             <option>PATCH</option>
             <option>DELETE</option>
           </select>
-          <input id="reqPath" value="/api/health" placeholder="/api/health" />
-          <button class="btn" id="btnSend">Отправить</button>
+          <input id="reqPath" value="/api/health" placeholder="/api/endpoint" style="flex: 1;" />
+          <button class="btn" id="btnSend">🚀 Отправить</button>
         </div>
-        <div class="row" style="margin-top: 8px; align-items: flex-start;">
-          <div class="col" style="flex: 1;">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
             <label>Заголовки (JSON)</label>
             <textarea id="reqHeaders" placeholder='{"Content-Type":"application/json"}'>{
   "Content-Type": "application/json"
 }</textarea>
           </div>
-          <div class="col" style="flex: 1;">
-            <label>Тело (JSON)</label>
+          <div>
+            <label>Тело запроса (JSON)</label>
             <textarea id="reqBody" placeholder='{"key":"value"}'></textarea>
           </div>
         </div>
-        <div class="hr"></div>
-        <div class="row" style="gap: 16px; flex-wrap: nowrap; align-items: flex-start;">
-          <div class="col" style="flex: 1;">
-            <label>Ответ</label>
-            <pre id="respOut">—</pre>
+      </div>
+
+      <div class="tab-content" id="response-tab">
+        <div class="response-stats">
+          <div class="response-stat">
+            <div class="response-stat-value" id="respStatus">—</div>
+            <div class="response-stat-label">Статус</div>
           </div>
-          <div class="col" style="width: 260px;">
-            <label>Статус</label>
-            <div class="row stat" id="respStat"><span class="dot"></span><span class="muted">—</span></div>
-            <div class="hr"></div>
-            <div class="kvs">
-              <div class="muted">HTTP</div><div><span id="httpCode" class="pill">—</span></div>
-              <div class="muted">Время</div><div><span id="httpTime" class="pill">—</span></div>
-              <div class="muted">Размер</div><div><span id="httpSize" class="pill">—</span></div>
-            </div>
+          <div class="response-stat">
+            <div class="response-stat-value" id="respTime">—</div>
+            <div class="response-stat-label">Время</div>
+          </div>
+          <div class="response-stat">
+            <div class="response-stat-value" id="respSize">—</div>
+            <div class="response-stat-label">Размер</div>
+          </div>
+          <div class="response-stat">
+            <div class="response-stat-value" id="respType">—</div>
+            <div class="response-stat-label">Тип</div>
           </div>
         </div>
-      </section>
+        
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+          <div>
+            <label>Ответ сервера</label>
+            <div class="code-block scrollable" id="apiResponse">Ожидание запроса...</div>
+          </div>
+          <div>
+            <label>Заголовки ответа</label>
+            <div class="code-block scrollable" id="responseHeaders">—</div>
+          </div>
+        </div>
+      </div>
 
-      <section class="card span-6" id="authTest">
-        <h2>Тест авторизации</h2>
-        <div class="row">
-          <div class="col" style="flex: 1;">
-            <label>Логин</label>
+      <div class="tab-content" id="history-tab">
+        <div class="form-row" style="margin-bottom: 16px;">
+          <button class="btn secondary" id="btnClearHistory">🗑️ Очистить историю</button>
+          <button class="btn info" id="btnExportHistory">📤 Экспорт</button>
+        </div>
+        <div class="request-history" id="requestHistory">
+          <div class="alert warning">История запросов пуста</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth & WebSocket Section -->
+    <div class="wide-grid">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">🔐</span>
+            Управление авторизацией
+          </h2>
+          <div class="status-indicator">
+            <div class="status-dot" id="authStatusDot"></div>
+            <span id="authStatusText">Не авторизован</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label>Имя пользователя</label>
             <input id="loginUsername" placeholder="username" />
           </div>
-          <div class="col" style="flex: 1;">
+          <div class="form-group">
             <label>Пароль</label>
             <input id="loginPassword" type="password" placeholder="password" />
           </div>
         </div>
-        <div class="row" style="margin-top: 8px;">
-          <button class="btn" id="btnRegister">Регистрация</button>
-          <button class="btn" id="btnLogin">Вход</button>
-          <button class="btn warn" id="btnClearToken">Сброс токена</button>
-        </div>
-        <div class="hr"></div>
-        <label>Результат</label>
-        <pre id="authOut">—</pre>
-      </section>
 
-      <section class="card span-6" id="wsTest">
-        <h2>Тест мессенджера (WebSocket)</h2>
-        <div class="col" style="gap: 8px;">
-          <label>WS URL</label>
+        <div class="quick-actions" style="margin-bottom: 16px;">
+          <button class="btn" id="btnRegister">📝 Регистрация</button>
+          <button class="btn info" id="btnLogin">🚪 Вход</button>
+          <button class="btn warn" id="btnClearToken">🗑️ Сбросить токен</button>
+          <button class="btn secondary" id="btnShowToken">👁️ Показать токен</button>
+        </div>
+
+        <div class="form-group">
+          <label>Результат авторизации</label>
+          <div class="code-block" id="authResult">Ожидание действий...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">🔌</span>
+            WebSocket тестер
+          </h2>
+          <div class="status-indicator">
+            <div class="status-dot" id="wsStatusDot"></div>
+            <span id="wsStatusText">Отключен</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>WebSocket URL</label>
           <input id="wsUrl" value="wss://krackenx.onrender.com/socket.io/?EIO=4&transport=websocket" />
-          <div class="row">
-            <button class="btn" id="btnWsConnect">Подключиться</button>
-            <button class="btn warn" id="btnWsClose" disabled>Отключить</button>
-          </div>
-          <div class="row" style="align-items: flex-start; gap: 12px;">
-            <div class="col" style="flex:1;">
-              <label>Сообщение</label>
-              <input id="wsMsg" placeholder='{"type":"ping"}' />
-            </div>
-            <button class="btn" id="btnWsSend" disabled>Отправить</button>
-          </div>
-          <div class="hr"></div>
-          <label>Логи</label>
-          <pre id="wsLog" style="min-height: 160px;">—</pre>
         </div>
-      </section>
 
-      <section class="card span-12" id="adminTools">
-        <h2>Админ-инструменты</h2>
-        <div class="row" style="align-items: flex-end; gap: 12px; flex-wrap: wrap;">
-          <div class="col" style="min-width: 260px;">
-            <label>Admin Password (заголовок X-Admin-Password)</label>
-            <input id="adminToken" placeholder="введите admin password" />
-          </div>
-          <button class="btn danger" id="btnAdminDeleteMessages">Удалить все сообщения</button>
-          <button class="btn danger" id="btnAdminDeleteUsers">Удалить всех пользователей</button>
-          <button class="btn" id="btnAdminShowLogs">Показать логи</button>
-          <button class="btn warn" id="btnAdminClearLogs">Очистить логи</button>
+        <div class="quick-actions" style="margin-bottom: 16px;">
+          <button class="btn" id="btnWsConnect">🔗 Подключиться</button>
+          <button class="btn warn" id="btnWsDisconnect" disabled>❌ Отключиться</button>
+          <button class="btn info" id="btnWsPing">📡 Ping</button>
+          <button class="btn secondary" id="btnWsClear">🧹 Очистить лог</button>
         </div>
-        <div class="hr"></div>
-        <label>Результат</label>
-        <pre id="adminOut">—</pre>
-        <div class="hr"></div>
-        <label>Логи сервера</label>
-        <pre id="adminLogsOut" style="max-height: 280px; overflow: auto;">—</pre>
-      </section>
 
+        <div class="form-row" style="margin-bottom: 16px;">
+          <input id="wsMessage" placeholder='{"type":"message","data":"test"}' style="flex: 1;" />
+          <button class="btn" id="btnWsSend" disabled>📤 Отправить</button>
+        </div>
+
+        <div class="form-group">
+          <label>WebSocket лог (последние 100 сообщений)</label>
+          <div class="code-block scrollable" id="wsLog">Ожидание подключения...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Admin Tools -->
+    <div class="card full-width">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="card-icon">⚙️</span>
+          Административные инструменты
+        </h2>
+        <div class="status-indicator">
+          <div class="status-dot" id="adminStatusDot"></div>
+          <span>Admin Access</span>
+        </div>
+      </div>
+
+      <div class="admin-warning">
+        <strong>⚠️ ОСТОРОЖНО:</strong> Эти действия необратимы и влияют на всех пользователей сервера!
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="admin-actions">Действия</div>
+        <div class="tab" data-tab="admin-logs">Логи</div>
+        <div class="tab" data-tab="admin-stats">Статистика</div>
+        <div class="tab" data-tab="admin-tools">Инструменты</div>
+      </div>
+
+      <div class="tab-content active" id="admin-actions-tab">
+        <div class="form-group">
+          <label>Admin Password (X-Admin-Password header)</label>
+          <input id="adminPassword" type="password" placeholder="Введите admin password" />
+        </div>
+
+        <div class="metric-grid" style="margin-bottom: 20px;">
+          <div class="metric">
+            <span class="metric-value" id="totalUsersMetric">—</span>
+            <div class="metric-label">Пользователей</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="totalMessagesMetric">—</span>
+            <div class="metric-label">Сообщений</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="serverUptimeMetric">—</span>
+            <div class="metric-label">Uptime</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="activeConnectionsMetric">—</span>
+            <div class="metric-label">Активных WS</div>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <button class="btn danger" id="btnDeleteMessages">🗑️ Удалить все сообщения</button>
+          <button class="btn danger" id="btnDeleteUsers">👥 Удалить всех пользователей</button>
+          <button class="btn warn" id="btnRestartServer">🔄 Перезапустить сервер</button>
+          <button class="btn info" id="btnBackupData">💾 Бэкап данных</button>
+        </div>
+
+        <div class="form-group" style="margin-top: 20px;">
+          <label>Результат операции</label>
+          <div class="code-block" id="adminResult">Ожидание команд...</div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="admin-logs-tab">
+        <div class="form-row" style="margin-bottom: 16px;">
+          <select id="logLevel">
+            <option value="">Все уровни</option>
+            <option value="error">Ошибки</option>
+            <option value="warn">Предупреждения</option>
+            <option value="info">Информация</option>
+          </select>
+          <input id="logLimit" type="number" value="100" min="10" max="1000" placeholder="Лимит" />
+          <button class="btn" id="btnLoadLogs">📋 Загрузить логи</button>
+          <button class="btn warn" id="btnClearLogs">🗑️ Очистить логи</button>
+          <button class="btn secondary" id="btnAutoRefreshLogs">🔄 Auto: OFF</button>
+        </div>
+
+        <div class="form-group">
+          <label>Логи сервера</label>
+          <div class="code-block scrollable" style="max-height: 400px;" id="serverLogs">Нажмите "Загрузить логи" для просмотра</div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="admin-stats-tab">
+        <div class="quick-actions" style="margin-bottom: 20px;">
+          <button class="btn" id="btnRefreshStats">🔄 Обновить статистику</button>
+          <button class="btn info" id="btnExportStats">📊 Экспорт отчета</button>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric">
+            <span class="metric-value" id="memoryUsageMetric">—</span>
+            <div class="metric-label">Память (MB)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="cpuUsageMetric">—</span>
+            <div class="metric-label">CPU (%)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="diskUsageMetric">—</span>
+            <div class="metric-label">Диск (GB)</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="networkTrafficMetric">—</span>
+            <div class="metric-label">Трафик (MB)</div>
+          </div>
+        </div>
+
+        <div class="chart-container" style="margin: 20px 0;">
+          <canvas id="performanceChart" style="width: 100%; height: 200px;"></canvas>
+        </div>
+
+        <div class="form-group">
+          <label>Детальная статистика</label>
+          <div class="code-block scrollable" id="detailedStats">Нажмите "Обновить статистику"</div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="admin-tools-tab">
+        <div class="quick-actions" style="margin-bottom: 20px;">
+          <button class="btn info" id="btnValidateServer">✅ Проверить сервер</button>
+          <button class="btn warn" id="btnMaintenanceMode">🔧 Режим обслуживания</button>
+          <button class="btn secondary" id="btnDatabaseOptimize">⚡ Оптимизировать БД</button>
+          <button class="btn" id="btnSendBroadcast">📢 Broadcast сообщение</button>
+        </div>
+
+        <div class="form-group">
+          <label>Broadcast сообщение всем пользователям</label>
+          <textarea id="broadcastMessage" placeholder='{"type":"announcement","message":"Сервер будет перезапущен через 5 минут"}'></textarea>
+          <button class="btn warn" style="margin-top: 8px;" id="btnExecuteBroadcast">📡 Отправить всем</button>
+        </div>
+
+        <div class="form-group">
+          <label>SQL запрос (только для чтения)</label>
+          <textarea id="sqlQuery" placeholder="SELECT COUNT(*) FROM users WHERE created_at > '2024-01-01'"></textarea>
+          <button class="btn info" style="margin-top: 8px;" id="btnExecuteSQL">🔍 Выполнить запрос</button>
+        </div>
+
+        <div class="form-group">
+          <label>Результат выполнения</label>
+          <div class="code-block" id="toolsResult">Ожидание команд...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Monitor -->
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">📈</span>
+            Мониторинг производительности
+          </h2>
+        </div>
+
+        <div class="performance-ring" style="margin: 0 auto 20px; --angle: 180deg;">
+          <span id="performanceScore">85%</span>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric">
+            <span class="metric-value" id="avgResponseTime">—</span>
+            <div class="metric-label">Средн. время</div>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="requestsPerMinute">—</span>
+            <div class="metric-label">Запр/мин</div>
+          </div>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 75%"></div>
+        </div>
+        <div style="text-align: center; color: var(--muted); font-size: 12px;">
+          Server Load: 75%
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">🔍</span>
+            Диагностика
+          </h2>
+        </div>
+
+        <div class="quick-actions" style="margin-bottom: 16px;">
+          <button class="btn info" id="btnRunDiagnostic">🔬 Полная диагностика</button>
+          <button class="btn secondary" id="btnTestEndpoints">📡 Тест эндпоинтов</button>
+        </div>
+
+        <div class="form-group">
+          <label>Результаты диагностики</label>
+          <div class="code-block scrollable" id="diagnosticResults">
+🟢 Базовые функции: OK
+🟡 WebSocket: Проверяется...
+🔴 Admin доступ: Требуется пароль
+⚪ База данных: Не проверено
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
   <script>
-    const qs = (sel) => document.querySelector(sel);
-    const baseUrlEl = qs('#baseUrl');
-    const statusDot = qs('#statusDot');
-    const statusText = qs('#statusText');
-    const healthOut = qs('#healthOut');
-    const btnPing = qs('#btnPing');
-    const btnHealth = qs('#btnHealth');
+    function initEventListeners() {
+      // Мониторинг сервера 
+      elements.btnPing?.addEventListener("click", () => serverStatus.quickPing());
+      elements.btnHealth?.addEventListener("click", () => serverStatus.checkHealth());
+      elements.autoRefreshBtn?.addEventListener("click", () => {
+        state.autoRefresh = !state.autoRefresh;
+        elements.autoRefreshBtn.textContent = `Auto Refresh: ${state.autoRefresh ? "ON" : "OFF"}`;
+        if (state.autoRefresh) {
+          serverStatus.checkHealth();
+          state.autoRefreshTimer = setInterval(() => serverStatus.checkHealth(), 5000);
+        } else {
+          clearInterval(state.autoRefreshTimer);
+        }
+      });
 
-    const methodEl = qs('#reqMethod');
-    const pathEl = qs('#reqPath');
-    const headersEl = qs('#reqHeaders');
-    const bodyEl = qs('#reqBody');
-    const btnSend = qs('#btnSend');
-    const respOut = qs('#respOut');
-    const respStat = qs('#respStat');
-    const httpCode = qs('#httpCode');
-    const httpTime = qs('#httpTime');
-    const httpSize = qs('#httpSize');
+      // API тестер
+      elements.btnSend?.addEventListener("click", () => apiTester.sendRequest());
 
-    const loginUsername = qs('#loginUsername');
-    const loginPassword = qs('#loginPassword');
-    const btnRegister = qs('#btnRegister');
-    const btnLogin = qs('#btnLogin');
-    const btnClearToken = qs('#btnClearToken');
-    const authOut = qs('#authOut');
+      // Авторизация
+      document.getElementById("btnLogin")?.addEventListener("click", () => authManager.login());
+      document.getElementById("btnRegister")?.addEventListener("click", () => authManager.register());
+      document.getElementById("btnClearToken")?.addEventListener("click", () => authManager.clearToken());
+      document.getElementById("btnShowToken")?.addEventListener("click", () => authManager.showToken());
 
-    const wsUrl = qs('#wsUrl');
-    const btnWsConnect = qs('#btnWsConnect');
-    const btnWsClose = qs('#btnWsClose');
-    const btnWsSend = qs('#btnWsSend');
-    const wsMsg = qs('#wsMsg');
-    const wsLog = qs('#wsLog');
+      // WebSocket
+      document.getElementById("btnWsConnect")?.addEventListener("click", () => wsManager.logMessage("Подключение...", "system"));
+      document.getElementById("btnWsDisconnect")?.addEventListener("click", () => wsManager.logMessage("Отключение...", "system"));
+      document.getElementById("btnWsPing")?.addEventListener("click", () => wsManager.logMessage("Ping!", "sent"));
+      document.getElementById("btnWsClear")?.addEventListener("click", () => {
+        wsManager.messageHistory = [];
+        wsManager.updateLogDisplay();
+      });
 
-    // Admin controls
-    let adminTokenEl, btnDelMsgs, btnDelUsers, adminOut, btnShowLogs, btnClearLogs, adminLogsOut;
-    adminTokenEl = document.getElementById('adminToken');
-    btnDelMsgs = document.getElementById('btnAdminDeleteMessages');
-    btnDelUsers = document.getElementById('btnAdminDeleteUsers');
-    adminOut = document.getElementById('adminOut');
-    btnShowLogs = document.getElementById('btnAdminShowLogs');
-    btnClearLogs = document.getElementById('btnAdminClearLogs');
-    adminLogsOut = document.getElementById('adminLogsOut');
-
-    async function doAdminDelete(path) {
-      const base = baseUrlEl.value.replace(/\/$/, '');
-      const token = (adminTokenEl && adminTokenEl.value) || '';
-      if (adminOut) adminOut.textContent = '…';
-      try {
-        const res = await fetch(base + path, {
-          method: 'POST',
-          headers: token ? { 'X-Admin-Password': token } : {}
+      // Вкладки
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+          document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById(tab.dataset.tab + "-tab").classList.add("active");
         });
-        const text = await res.text();
-        const pretty = await safeJson(text);
-        if (adminOut) adminOut.textContent = `${res.status} ${res.statusText}\n\n${pretty}`;
-      } catch (e) {
-        if (adminOut) adminOut.textContent = String(e);
-      }
+      });
     }
 
-    async function doAdminShowLogs() {
-      const base = baseUrlEl.value.replace(/\/$/, '');
-      const token = (adminTokenEl && adminTokenEl.value) || '';
-      if (adminLogsOut) adminLogsOut.textContent = '…';
-      try {
-        const res = await fetch(base + '/api/admin/logs?limit=500', {
-          headers: token ? { 'X-Admin-Password': token } : {}
-        });
-        const text = await res.text();
-        let pretty = text;
-        try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch {}
-        if (adminLogsOut) adminLogsOut.textContent = pretty;
-      } catch (e) {
-        if (adminLogsOut) adminLogsOut.textContent = String(e);
-      }
-    }
+    // === Инициализация ===
+    document.addEventListener("DOMContentLoaded", () => {
+      initEventListeners();
+      serverStatus.quickPing(); // первый пинг при загрузке
+    }); 
+    // Глобальные переменные
+    const elements = {
+      // Основные элементы
+      baseUrl: document.getElementById('baseUrl'),
+      mainStatusDot: document.getElementById('mainStatusDot'),
+      mainStatusText: document.getElementById('mainStatusText'),
+      headerServerStatus: document.getElementById('headerServerStatus'),
+      uptimeCounter: document.getElementById('uptimeCounter'),
+      
+      // Кнопки
+      btnPing: document.getElementById('btnPing'),
+      btnHealth: document.getElementById('btnHealth'),
+      btnSend: document.getElementById('btnSend'),
+      autoRefreshBtn: document.getElementById('autoRefreshBtn'),
+      
+      // API тестер
+      reqMethod: document.getElementById('reqMethod'),
+      reqPath: document.getElementById('reqPath'),
+      reqHeaders: document.getElementById('reqHeaders'),
+      reqBody: document.getElementById('reqBody'),
+      apiResponse: document.getElementById('apiResponse'),
+      
+      // Статистика ответов
+      respStatus: document.getElementById('respStatus'),
+      respTime: document.getElementById('respTime'),
+      respSize: document.getElementById('respSize'),
+      respType: document.getElementById('respType'),
+      responseHeaders: document.getElementById('responseHeaders'),
+      
+      // Авторизация
+      loginUsername: document.getElementById('loginUsername'),
+      loginPassword: document.getElementById('loginPassword'),
+      authResult: document.getElementById('authResult'),
+      authStatusDot: document.getElementById('authStatusDot'),
+      authStatusText: document.getElementById('authStatusText'),
+      
+      // WebSocket
+      wsUrl: document.getElementById('wsUrl'),
+      wsMessage: document.getElementById('wsMessage'),
+      wsLog: document.getElementById('wsLog'),
+      wsStatusDot: document.getElementById('wsStatusDot'),
+      wsStatusText: document.getElementById('wsStatusText'),
+      
+      // Админ
+      adminPassword: document.getElementById('adminPassword'),
+      adminResult: document.getElementById('adminResult'),
+      serverLogs: document.getElementById('serverLogs'),
+      
+      // Метрики
+      responseTimeMetric: document.getElementById('responseTimeMetric'),
+      requestsCountMetric: document.getElementById('requestsCountMetric'),
+      errorsCountMetric: document.getElementById('errorsCountMetric'),
+      
+      // Health ответ
+      healthResponse: document.getElementById('healthResponse')
+    };
 
-    async function doAdminClearLogs() {
-      const base = baseUrlEl.value.replace(/\/$/, '');
-      const token = (adminTokenEl && adminTokenEl.value) || '';
-      try {
-        const res = await fetch(base + '/api/admin/clear-logs', {
-          method: 'POST',
-          headers: token ? { 'X-Admin-Password': token } : {}
-        });
-        const text = await res.text();
-        let pretty = text;
-        try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch {}
-        if (adminOut) adminOut.textContent = `${res.status} ${res.statusText}\n\n${pretty}`;
-        if (adminLogsOut) adminLogsOut.textContent = '—';
-      } catch (e) {
-        if (adminOut) adminOut.textContent = String(e);
-      }
-    }
+    // Состояние приложения
+    const state = {
+      autoRefresh: false,
+      autoRefreshLogs: false,
+      ws: null,
+      requestHistory: [],
+      metrics: {
+        totalRequests: 0,
+        totalErrors: 0,
+        avgResponseTime: 0,
+        responseTimes: []
+      },
+      startTime: Date.now()
+    };
 
-    const getToken = () => localStorage.getItem('kracken_token') || '';
-    const setToken = (t) => localStorage.setItem('kracken_token', t || '');
-
-    function setServerStatus(ok, text) {
-      statusDot.classList.toggle('ok', !!ok);
-      statusDot.classList.toggle('bad', !ok);
-      statusText.textContent = text || (ok ? 'OK' : 'OFFLINE');
-    }
-
-    async function safeJson(text) {
-      try { return JSON.stringify(JSON.parse(text), null, 2); }
-      catch { return text; }
-    }
-
-    async function doHealth() {
-      const url = baseUrlEl.value.replace(/\/$/, '') + '/api/health';
-      healthOut.textContent = '…';
-      try {
-        const t0 = performance.now();
-        const res = await fetch(url, { method: 'GET' });
-        const t1 = performance.now();
-        const text = await res.text();
-        const pretty = await safeJson(text);
-        healthOut.textContent = `${res.status} ${res.statusText}\n${Math.round(t1 - t0)}ms\n\n${pretty}`;
-        setServerStatus(res.ok, res.ok ? 'Доступен' : `Ошибка: ${res.status}`);
-      } catch (e) {
-        healthOut.textContent = String(e);
-        setServerStatus(false, 'Нет ответа');
-      }
-    }
-
-    async function doPingOnly() {
-      const url = baseUrlEl.value.replace(/\/$/, '');
-      setServerStatus(false, 'Проверка…');
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch(url + '/api/health', { signal: controller.signal });
-        clearTimeout(timer);
-        setServerStatus(res.ok, res.ok ? 'Доступен' : `Ошибка: ${res.status}`);
-      } catch (_) {
-        setServerStatus(false, 'Нет ответа');
-      }
-    }
-
-    async function doSend() {
-      const base = baseUrlEl.value.replace(/\/$/, '');
-      const path = pathEl.value.startsWith('/') ? pathEl.value : '/' + pathEl.value;
-      let headers = {};
-      try { headers = JSON.parse(headersEl.value || '{}'); } catch { headers = {}; }
-      const token = getToken();
-      if (token && !headers['Authorization']) headers['Authorization'] = `Bearer ${token}`;
-
-      let body = undefined;
-      if (['POST','PUT','PATCH','DELETE'].includes(methodEl.value)) {
-        const raw = bodyEl.value.trim();
-        if (raw) body = raw;
-      }
-
-      respOut.textContent = '…';
-      httpCode.textContent = '—';
-      httpTime.textContent = '—';
-      httpSize.textContent = '—';
-      const dot = respStat.querySelector('.dot');
-      const lbl = respStat.querySelector('span.muted');
-      dot.classList.remove('ok','bad');
-      lbl.textContent = '—';
-
-      try {
-        const t0 = performance.now();
-        const res = await fetch(base + path, { method: methodEl.value, headers, body });
-        const t1 = performance.now();
-        const text = await res.text();
-        const pretty = await safeJson(text);
-        respOut.textContent = pretty;
-        httpCode.textContent = res.status + ' ' + res.statusText;
-        httpTime.textContent = Math.round(t1 - t0) + 'ms';
-        httpSize.textContent = (new Blob([text]).size) + 'B';
-        dot.classList.add(res.ok ? 'ok' : 'bad');
-        lbl.textContent = res.ok ? 'Успех' : 'Ошибка';
+    // Утилиты
+    const utils = {
+      getToken: () => localStorage.getItem('kracken_token') || '',
+      setToken: (token) => localStorage.setItem('kracken_token', token || ''),
+      
+      async formatJson(text) {
         try {
-          const j = JSON.parse(text);
-          if (j && (j.token || j.accessToken)) {
-            setToken(j.token || j.accessToken);
-          }
-        } catch {}
-      } catch (e) {
-        respOut.textContent = String(e);
-        dot.classList.add('bad');
-        lbl.textContent = 'Сбой запроса';
-      }
-    }
-
-    async function doAuth(kind) {
-      const base = baseUrlEl.value.replace(/\/$/, '');
-      const path = kind === 'register' ? '/api/auth/register' : '/api/auth/login';
-      authOut.textContent = '…';
-      try {
-        const res = await fetch(base + path, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: loginUsername.value, password: loginPassword.value })
+          return JSON.stringify(JSON.parse(text), null, 2);
+        } catch {
+          return text;
+        }
+      },
+      
+      formatTime(ms) {
+        if (ms < 1000) return `${ms}ms`;
+        if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+        return `${(ms / 60000).toFixed(1)}m`;
+      },
+      
+      formatBytes(bytes) {
+        if (bytes < 1024) return `${bytes}B`;
+        if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)}KB`;
+        return `${(bytes / 1048576).toFixed(1)}MB`;
+      },
+      
+      getCurrentTime() {
+        return new Date().toLocaleTimeString();
+      },
+      
+      addToHistory(request, response) {
+        state.requestHistory.unshift({
+          timestamp: Date.now(),
+          method: request.method,
+          path: request.path,
+          status: response.status,
+          time: response.time,
+          ...request
         });
-        const text = await res.text();
-        const pretty = await safeJson(text);
-        authOut.textContent = pretty;
-        try {
-          const j = JSON.parse(text);
-          if (j && (j.token || j.accessToken)) {
-            setToken(j.token || j.accessToken);
+        
+        if (state.requestHistory.length > 50) {
+          state.requestHistory = state.requestHistory.slice(0, 50);
+        }
+        
+        this.updateHistoryDisplay();
+      },
+      
+      updateHistoryDisplay() {
+        const historyContainer = document.getElementById('requestHistory');
+        if (!historyContainer) return;
+        
+        if (state.requestHistory.length === 0) {
+          historyContainer.innerHTML = '<div class="alert warning">История запросов пуста</div>';
+          return;
+        }
+        
+        const historyHtml = state.requestHistory.map(item => `
+          <div class="history-item" data-request='${JSON.stringify(item)}'>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="method-badge method-${item.method.toLowerCase()}">${item.method}</span>
+              <span>${item.path}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted);">
+              <span>${item.status || '—'}</span>
+              <span>${item.time ? utils.formatTime(item.time) : '—'}</span>
+              <span>${new Date(item.timestamp).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        `).join('');
+        
+        historyContainer.innerHTML = historyHtml;
+        
+        // Добавляем обработчики кликов
+        historyContainer.querySelectorAll('.history-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const requestData = JSON.parse(item.dataset.request);
+            this.loadRequestFromHistory(requestData);
+          });
+        });
+      },
+      
+      loadRequestFromHistory(requestData) {
+        elements.reqMethod.value = requestData.method;
+        elements.reqPath.value = requestData.path;
+        if (requestData.headers) {
+          elements.reqHeaders.value = JSON.stringify(requestData.headers, null, 2);
+        }
+        if (requestData.body) {
+          elements.reqBody.value = requestData.body;
+        }
+        
+        // Переключаемся на вкладку запроса
+        document.querySelector('[data-tab="request"]').click();
+      }
+    };
+
+    // Управление статусом сервера
+    const serverStatus = {
+      setStatus(isOnline, message) {
+        const classes = isOnline ? ['online'] : ['offline'];
+        const oldClasses = isOnline ? ['offline'] : ['online'];
+        
+        [elements.mainStatusDot].forEach(dot => {
+          if (dot) {
+            dot.classList.remove(...oldClasses);
+            dot.classList.add(...classes);
           }
-        } catch {}
-      } catch (e) {
-        authOut.textContent = String(e);
+        });
+        
+        if (elements.mainStatusText) {
+          elements.mainStatusText.textContent = message || (isOnline ? 'Онлайн' : 'Офлайн');
+        }
+        
+        if (elements.headerServerStatus) {
+          elements.headerServerStatus.textContent = isOnline ? 'Online' : 'Offline';
+        }
+      },
+      
+      async checkHealth() {
+        const url = elements.baseUrl.value.replace(/\/$/, '') + '/api/health';
+        elements.healthResponse.textContent = 'Проверка...';
+        
+        try {
+          const startTime = performance.now();
+          const response = await fetch(url, { method: 'GET' });
+          const endTime = performance.now();
+          const responseTime = Math.round(endTime - startTime);
+          
+          const text = await response.text();
+          const formattedResponse = await utils.formatJson(text);
+          
+          const result = `Статус: ${response.status} ${response.statusText}\nВремя ответа: ${responseTime}ms\nРазмер: ${text.length} байт\n\n${formattedResponse}`;
+          
+          elements.healthResponse.textContent = result;
+          this.setStatus(response.ok, response.ok ? 'Доступен' : `Ошибка ${response.status}`);
+          
+          // Обновляем метрики
+          if (elements.responseTimeMetric) {
+            elements.responseTimeMetric.textContent = responseTime;
+          }
+          
+          state.metrics.responseTimes.push(responseTime);
+          if (state.metrics.responseTimes.length > 10) {
+            state.metrics.responseTimes = state.metrics.responseTimes.slice(-10);
+          }
+          
+          const avgTime = state.metrics.responseTimes.reduce((a, b) => a + b, 0) / state.metrics.responseTimes.length;
+          state.metrics.avgResponseTime = Math.round(avgTime);
+          
+        } catch (error) {
+          elements.healthResponse.textContent = `Ошибка: ${error.message}`;
+          this.setStatus(false, 'Недоступен');
+        }
+      },
+      
+      async quickPing() {
+        const url = elements.baseUrl.value.replace(/\/$/, '') + '/api/health';
+        this.setStatus(false, 'Проверка...');
+        
+        try {
+          const controller = new AbortController();
+          setTimeout(() => controller.abort(), 3000);
+          
+          const response = await fetch(url, { 
+            signal: controller.signal,
+            method: 'HEAD'
+          });
+          
+          this.setStatus(response.ok, response.ok ? 'Доступен' : `Ошибка ${response.status}`);
+        } catch {
+          this.setStatus(false, 'Недоступен');
+        }
       }
-    }
+    };
 
-    // WebSocket tester (generic). If your server uses Socket.IO, provide ws URL like wss://host/socket.io/?EIO=4&transport=websocket
-    let ws;
-    function logWs(line) {
-      const now = new Date().toLocaleTimeString();
-      wsLog.textContent = (wsLog.textContent === '—' ? '' : wsLog.textContent + "\n") + `[${now}] ${line}`;
-      wsLog.scrollTop = wsLog.scrollHeight;
-    }
-    function setWsState(connected) {
-      btnWsConnect.disabled = connected;
-      btnWsClose.disabled = !connected;
-      btnWsSend.disabled = !connected;
-    }
-
-    function connectWs() {
-      try {
-        const url = wsUrl.value.trim();
-        if (!/^wss?:\/\//i.test(url)) throw new Error('Неверный WS URL');
-        wsLog.textContent = '—';
-        logWs('Подключение…');
-        ws = new WebSocket(url);
-        ws.onopen = () => { logWs('Открыто'); setWsState(true); };
-        ws.onclose = (ev) => { logWs(`Закрыто (code=${ev.code})`); setWsState(false); };
-        ws.onerror = (ev) => { logWs('Ошибка'); };
-        ws.onmessage = (ev) => {
-          let data = ev.data;
-          try { data = JSON.stringify(JSON.parse(ev.data), null, 2); } catch {}
-          logWs('← ' + data);
-        };
-      } catch (e) {
-        logWs('Сбой: ' + e.message);
+    // API тестер
+    const apiTester = {
+      async sendRequest() {
+        const base = elements.baseUrl.value.replace(/\/$/, '');
+        const path = elements.reqPath.value.startsWith('/') ? elements.reqPath.value : '/' + elements.reqPath.value;
+        const method = elements.reqMethod.value;
+        
+        // Подготовка заголовков
+        let headers = {};
+        try {
+          headers = JSON.parse(elements.reqHeaders.value || '{}');
+        } catch {
+          headers = { 'Content-Type': 'application/json' };
+        }
+        
+        // Добавляем токен если есть
+        const token = utils.getToken();
+        if (token && !headers['Authorization']) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        // Подготовка тела запроса
+        let body = undefined;
+        if (['POST', 'PUT', 'PATCH'].includes(method)) {
+          const rawBody = elements.reqBody.value.trim();
+          if (rawBody) body = rawBody;
+        }
+        
+        // Очистка предыдущих результатов
+        elements.apiResponse.textContent = 'Отправка запроса...';
+        elements.respStatus.textContent = '—';
+        elements.respTime.textContent = '—';
+        elements.respSize.textContent = '—';
+        elements.respType.textContent = '—';
+        elements.responseHeaders.textContent = '—';
+        
+        const requestData = { method, path, headers, body };
+        
+        try {
+          const startTime = performance.now();
+          const response = await fetch(base + path, {
+            method,
+            headers,
+            body
+          });
+          const endTime = performance.now();
+          const responseTime = Math.round(endTime - startTime);
+          
+          // Получаем заголовки ответа
+          const responseHeadersObj = {};
+          for (let [key, value] of response.headers.entries()) {
+            responseHeadersObj[key] = value;
+          }
+          
+          const text = await response.text();
+          const formattedResponse = await utils.formatJson(text);
+          
+          // Обновляем UI
+          elements.apiResponse.textContent = formattedResponse;
+          elements.respStatus.textContent = `${response.status} ${response.statusText}`;
+          elements.respTime.textContent = utils.formatTime(responseTime);
+          elements.respSize.textContent = utils.formatBytes(text.length);
+          elements.respType.textContent = response.headers.get('content-type')?.split(';')[0] || 'unknown';
+          elements.responseHeaders.textContent = JSON.stringify(responseHeadersObj, null, 2);
+          
+          // Обновляем метрики
+          state.metrics.totalRequests++;
+          if (!response.ok) state.metrics.totalErrors++;
+          
+          elements.requestsCountMetric.textContent = state.metrics.totalRequests;
+          elements.errorsCountMetric.textContent = state.metrics.totalErrors;
+          
+          // Добавляем в историю
+          utils.addToHistory(requestData, {
+            status: response.status,
+            time: responseTime,
+            size: text.length
+          });
+          
+          // Проверяем токен в ответе
+          try {
+            const jsonResponse = JSON.parse(text);
+            if (jsonResponse.token || jsonResponse.accessToken) {
+              utils.setToken(jsonResponse.token || jsonResponse.accessToken);
+              authManager.updateAuthStatus(true, 'Авторизован');
+            }
+          } catch {}
+          
+          // Переключаемся на вкладку ответа
+          document.querySelector('[data-tab="response"]').click();
+          
+        } catch (error) {
+          elements.apiResponse.textContent = `Ошибка запроса: ${error.message}`;
+          elements.respStatus.textContent = 'Error';
+          
+          state.metrics.totalRequests++;
+          state.metrics.totalErrors++;
+          elements.requestsCountMetric.textContent = state.metrics.totalRequests;
+          elements.errorsCountMetric.textContent = state.metrics.totalErrors;
+          
+          utils.addToHistory(requestData, {
+            error: error.message
+          });
+        }
+      },
+      
+      formatJsonInTextarea(textareaId) {
+        const textarea = document.getElementById(textareaId);
+        if (!textarea) return;
+        
+        try {
+          const formatted = JSON.stringify(JSON.parse(textarea.value), null, 2);
+          textarea.value = formatted;
+        } catch {
+          // Если не JSON, оставляем как есть
+        }
       }
+    };
+
+    // Менеджер авторизации
+    const authManager = {
+      updateAuthStatus(isAuthed, message) {
+        const dot = elements.authStatusDot;
+        const text = elements.authStatusText;
+        
+        if (dot) {
+          dot.classList.toggle('online', isAuthed);
+          dot.classList.toggle('offline', !isAuthed);
+        }
+        
+        if (text) {
+          text.textContent = message || (isAuthed ? 'Авторизован' : 'Не авторизован');
+        }
+      },
+      
+      async register() {
+        await this.performAuth('register');
+      },
+      
+      async login() {
+        await this.performAuth('login');
+      },
+      
+      async performAuth(action) {
+        const base = elements.baseUrl.value.replace(/\/$/, '');
+        const endpoint = action === 'register' ? '/api/auth/register' : '/api/auth/login';
+        
+        elements.authResult.textContent = `${action === 'register' ? 'Регистрация' : 'Вход'}...`;
+        
+        try {
+          const response = await fetch(base + endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: elements.loginUsername.value,
+              password: elements.loginPassword.value
+            })
+          });
+          
+          const text = await response.text();
+          const formattedText = await utils.formatJson(text);
+          elements.authResult.textContent = formattedText;
+          
+          if (response.ok) {
+            try {
+              const jsonResponse = JSON.parse(text);
+              if (jsonResponse.token || jsonResponse.accessToken) {
+                utils.setToken(jsonResponse.token || jsonResponse.accessToken);
+                this.updateAuthStatus(true, `${action === 'register' ? 'Зарегистрирован' : 'Авторизован'}`);
+              }
+            } catch {}
+          } else {
+            this.updateAuthStatus(false, 'Ошибка авторизации');
+          }
+          
+        } catch (error) {
+          elements.authResult.textContent = `Ошибка: ${error.message}`;
+          this.updateAuthStatus(false, 'Ошибка соединения');
+        }
+      },
+      
+      clearToken() {
+        utils.setToken('');
+        this.updateAuthStatus(false, 'Токен очищен');
+        elements.authResult.textContent = 'Токен авторизации удален из localStorage';
+      },
+      
+      showToken() {
+        const token = utils.getToken();
+        if (token) {
+          elements.authResult.textContent = `Текущий токен:\n${token}`;
+        } else {
+          elements.authResult.textContent = 'Токен не найден';
+        }
+      }
+    };
+
+    // WebSocket менеджер 
+    const wsManager = {
+      wsConnection: null,
+      messageHistory: [],
+      
+      updateStatus(isConnected, message) {
+        const dot = elements.wsStatusDot;
+        const text = elements.wsStatusText;
+        const connectBtn = document.getElementById('btnWsConnect');
+        const disconnectBtn = document.getElementById('btnWsDisconnect');
+        const sendBtn = document.getElementById('btnWsSend');
+        
+        if (dot) {
+          dot.classList.toggle('online', isConnected);
+          dot.classList.toggle('offline', !isConnected);
+        }
+        
+        if (text) {
+          text.textContent = message || (isConnected ? 'Подключен' : 'Отключен');
+        }
+        
+        if (connectBtn) connectBtn.disabled = isConnected;
+        if (disconnectBtn) disconnectBtn.disabled = !isConnected;
+        if (sendBtn) sendBtn.disabled = !isConnected;
+      },
+      
+      logMessage(message, type = 'system') {
+        const timestamp = utils.getCurrentTime();
+        const logEntry = { timestamp, message, type };
+        
+        this.messageHistory.push(logEntry);
+        if (this.messageHistory.length > 100) {
+          this.messageHistory = this.messageHistory.slice(-100);
+        }
+        
+        this.updateLogDisplay();
+      },
+      
+      updateLogDisplay() {
+        console.log('updateLogDisplay');
+        if (!elements.wsLog) return;
+        
+        const logHtml = this.messageHistory.map(entry => `
+          <div class="ws-message ${entry.type}">
+            <span class="log-time">${entry.timestamp}</span>
+            <span class="log-message">${entry.message}</span>
+          </div>
+        `).join('');
+        
+        elements.wsLog.innerHTML = logHtml;
+      }
+    };
+
+    // Initial setup (eror)
+    try {
+      doPingOnly();
+    } catch (e) {
+      console.error('Error in initial setup', e);
     }
-    function closeWs() { if (ws) try { ws.close(1000, 'client-close'); } catch {} }
-    function sendWs() {
-      if (!ws || ws.readyState !== 1) { logWs('Нет соединения'); return; }
-      const text = wsMsg.value || '';
-      logWs('→ ' + text);
-      ws.send(text);
-    }
-
-    // Wire events
-    btnHealth.addEventListener('click', doHealth);
-    btnPing.addEventListener('click', doPingOnly);
-    btnSend.addEventListener('click', doSend);
-    btnRegister.addEventListener('click', () => doAuth('register'));
-    btnLogin.addEventListener('click', () => doAuth('login'));
-    btnClearToken.addEventListener('click', () => { setToken(''); authOut.textContent = 'Токен очищен'; });
-    btnWsConnect.addEventListener('click', connectWs);
-    btnWsClose.addEventListener('click', closeWs);
-    btnWsSend.addEventListener('click', sendWs);
-
-    if (btnDelMsgs) btnDelMsgs.addEventListener('click', () => doAdminDelete('/api/admin/delete-messages'));
-    if (btnDelUsers) btnDelUsers.addEventListener('click', () => doAdminDelete('/api/admin/delete-users'));
-    if (btnShowLogs) btnShowLogs.addEventListener('click', doAdminShowLogs);
-    if (btnClearLogs) btnClearLogs.addEventListener('click', doAdminClearLogs);
-
-    // Initial
-    doPingOnly();
   </script>
 </body>
 </html>
-
-

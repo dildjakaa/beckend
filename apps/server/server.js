@@ -21,6 +21,11 @@ const resendCodeHandler = require('./api/auth/resend-code.js');
 const loginHandler = require('./api/auth/login.js');
 const healthHandler = require('./api/health.js');
 const pingHandler = require('./api/ping.js');
+// Admin API handlers
+const adminLogsHandler = require('./api/admin/logs.js');
+const adminClearLogsHandler = require('./api/admin/clear-logs.js');
+const adminDeleteUsersHandler = require('./api/admin/delete-users.js');
+const adminDeleteMessagesHandler = require('./api/admin/delete-messages.js');
 
 // Store connected users
 const connectedUsers = new Map();
@@ -64,6 +69,12 @@ app.post('/api/auth/verify-email', verifyEmailHandler);
 app.post('/api/auth/login-email-verify', loginEmailVerifyHandler);
 app.post('/api/auth/resend-code', resendCodeHandler);
 app.post('/api/auth/login', loginHandler);
+
+// Admin routes
+app.get('/api/admin/logs', adminLogsHandler);
+app.post('/api/admin/clear-logs', adminClearLogsHandler);
+app.post('/api/admin/delete-users', adminDeleteUsersHandler);
+app.post('/api/admin/delete-messages', adminDeleteMessagesHandler);
 
 // GitHub OAuth endpoint
 app.get('/api/auth/github', (req, res) => {

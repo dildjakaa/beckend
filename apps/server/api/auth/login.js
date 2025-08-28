@@ -48,7 +48,8 @@ module.exports = async function handler(req, res) {
 
     // Update avatar URL if not set (for backward compatibility)
     if (!user.avatar_url) {
-      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(username.toLowerCase())}&backgroundColor=6366f1`;
+      const avatarSeed = (user.username || '').toString().toLowerCase();
+      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(avatarSeed)}&backgroundColor=6366f1`;
       await query(
         'UPDATE users SET avatar_url = $1 WHERE id = $2',
         [avatarUrl, user.id]

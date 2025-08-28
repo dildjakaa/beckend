@@ -9,7 +9,11 @@ module.exports = async function handler(req, res) {
   try {
     const { email, code } = req.body;
 
-    if (!email || !code || String(code).length !== 6) {
+    // Normalize input (email trimmed, code digits-only)
+    const normalizedEmail = email ? String(email).trim() : '';
+    const normalizedCode = String(code).replace(/\D/g, '').slice(0, 6);
+
+    if (!normalizedEmail || !normalizedCode || normalizedCode.length !== 6) {
       return badRequest(res, 'Неверные данные');
     }
 
@@ -17,7 +21,7 @@ module.exports = async function handler(req, res) {
     const userResult = await query(
       `SELECT id, username, email, email_verified, verification_code, verification_code_expires 
        FROM users WHERE LOWER(email) = LOWER($1) AND verification_code = $2`,
-      [email, code]
+      [normalizedEmail, normalizedCode]
     );
 
     if (userResult.rows.length === 0) {
