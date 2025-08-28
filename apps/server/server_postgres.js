@@ -225,22 +225,120 @@ app.post('/api/test/email', async (req, res) => {
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
     
+    // Handle token authentication
+    socket.on('authenticate_with_token', async (data) => {
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(data.token, process.env.JWT_SECRET || 'your-secret-key');
+            
+            // Get user from database
+            const userResult = await query(
+                'SELECT id, username, email, avatar_url FROM users WHERE id = $1',
+                [decoded.userId]
+            );
+            
+            if (userResult.rows.length === 0) {
+                socket.emit('token_auth_error', { error: 'User not found' });
+                return;
+            }
+            
+            const user = userResult.rows[0];
+            
+            // Store user info in socket
+            socket.userId = user.id;
+            socket.username = user.username;
+            
+            // Add to connected users
+            connectedUsers.set(socket.id, {
+                userId: user.id,
+                username: user.username,
+                socketId: socket.id
+            });
+            
+            // Update last seen
+            await query(
+                'UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = $1',
+                [user.id]
+            );
+            
+            // Ensure user is in general chat room
+            await query(
+                'INSERT INTO chat_room_participants (room_id, user_id) VALUES ($1, $2) ON CONFLICT (room_id, user_id) DO NOTHING',
+                [1, user.id]
+            );
+                    
+            // Send success response
+            socket.emit('token_auth_success', {
+                success: true,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    avatar_url: user.avatar_url
+                }
+            });
+                    
+            // Broadcast online users
+            broadcastOnlineUsers();
+                    
+        } catch (error) {
+            console.error('Token authentication error:', error);
+            socket.emit('token_auth_error', { error: 'Invalid token' });
+        }
+    });
+    
     socket.on('join', (userData) => {
         connectedUsers.set(socket.id, userData);
         broadcastOnlineUsers();
     });
     
+    socket.on('join_room', async (data) => {
+        if (!socket.userId) {
+            socket.emit('error', { message: 'Not authenticated' });
+            return;
+        }
+        
+        try {
+            // Get room messages
+            const messagesResult = await query(
+                `SELECT m.*, u.username 
+             FROM messages m 
+             JOIN users u ON m.user_id = u.id 
+                 WHERE m.room_id = $1 
+             ORDER BY m.timestamp DESC 
+             LIMIT 50`,
+                [data.roomId || 1]
+            );
+            
+            socket.emit('room_joined', {
+                success: true,
+                roomId: data.roomId || 1,
+                messages: messagesResult.rows.reverse()
+            });
+            
+        } catch (error) {
+            console.error('Error joining room:', error);
+            socket.emit('error', { message: 'Failed to join room' });
+        }
+    });
+    
     socket.on('message', async (data) => {
+        if (!socket.userId) {
+            socket.emit('error', { message: 'Not authenticated' });
+            return;
+        }
+        
         try {
             const result = await query(
                 'INSERT INTO messages (user_id, room_id, content) VALUES ($1, $2, $3) RETURNING *',
-                [data.userId, data.roomId || 1, data.content]
+                [socket.userId, data.roomId || 1, data.content]
             );
             
             const message = result.rows[0];
             io.emit('message', {
                 id: message.id,
-                userId: message.user_id,
+                userId: message.userId,
+                username: socket.username,
                 content: message.content,
                 timestamp: message.timestamp
             });
@@ -253,6 +351,11 @@ io.on('connection', (socket) => {
         connectedUsers.delete(socket.id);
         broadcastOnlineUsers();
         console.log('User disconnected:', socket.id);
+    });
+    
+    // Handle errors
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
     });
 });
 
