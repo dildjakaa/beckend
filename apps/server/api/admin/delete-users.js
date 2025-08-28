@@ -1,5 +1,6 @@
 const { success } = require('../../utils/response');
 const { addCorsHeaders, handleCorsPreflight } = require('../../utils/cors');
+const { query } = require('../../utils/db.js');
 
 module.exports = async function handler(req, res) {
   // Handle CORS preflight
@@ -18,26 +19,16 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Get the database instance
-  const db = require('../../utils/database.js');
-
-  // Delete messages first (due to foreign key constraints)
-  db.run('DELETE FROM messages', function(err) {
-    if (err) {
-      return res.status(500).json({ error: 'Failed to delete messages' });
-    }
-
-    // Then delete users
-    db.run('DELETE FROM users', function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to delete users' });
-      }
-
-      return success(res, {
-        message: 'All users and messages deleted successfully',
-        deletedUsersCount: this.changes,
-        timestamp: new Date().toISOString()
-      });
+  try {
+    // Delete messages first due to FK constraints
+    await query('DELETE FROM messages');
+    const usersResult = await query('DELETE FROM users');
+    return success(res, {
+      message: 'All users and messages deleted successfully',
+      deletedUsersCount: usersResult.rowCount || 0,
+      timestamp: new Date().toISOString()
     });
-  });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to delete users/messages' });
+  }
 };
