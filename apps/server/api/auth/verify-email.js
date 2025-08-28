@@ -7,19 +7,24 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { code } = req.body;
+    const { code, email } = req.body;
 
     // Validation
     if (!code || code.length !== 6) {
       return badRequest(res, 'Неверный код подтверждения');
     }
 
-    // Find user with this verification code
+    // Find user with this verification code (and optional email to disambiguate)
+    const params = email ? [code, email] : [code];
     const userResult = await query(
-      `SELECT id, username, email, verification_code, verification_code_expires 
-       FROM users 
-       WHERE verification_code = $1 AND email_verified = false`,
-      [code]
+      email
+        ? `SELECT id, username, email, verification_code, verification_code_expires 
+           FROM users 
+           WHERE verification_code = $1 AND LOWER(email) = LOWER($2) AND email_verified = false`
+        : `SELECT id, username, email, verification_code, verification_code_expires 
+           FROM users 
+           WHERE verification_code = $1 AND email_verified = false`,
+      params
     );
 
     if (userResult.rows.length === 0) {
