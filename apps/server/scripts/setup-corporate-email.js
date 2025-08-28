@@ -48,12 +48,7 @@ async function setupCorporateEmail() {
     const displayName = await question('Введите отображаемое имя (например: Kracken Support): ');
     
     // Создаем содержимое .env файла
-    const envContent = `# GitHub OAuth Configuration
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-GITHUB_CALLBACK_URL=https://beckend-yaj1.onrender.com/api/auth/github/callback
-
-# JWT Configuration
+    const envContent = `# JWT Configuration
 JWT_SECRET=your_super_secret_jwt_key_here
 
 # Email Configuration (Corporate Gmail)
@@ -81,10 +76,9 @@ NODE_ENV=development
     console.log('\n✅ Настройка завершена!');
     console.log(`📁 Файл .env создан: ${envPath}`);
     console.log('\n📋 Следующие шаги:');
-    console.log('1. Замените "your_github_client_id" и "your_github_client_secret" на ваши реальные данные GitHub OAuth');
-    console.log('2. Замените "your_super_secret_jwt_key_here" на случайную строку для JWT');
-    console.log('3. Настройте DATABASE_URL для вашей базы данных');
-    console.log('4. Запустите сервер: npm run dev');
+    console.log('1. Замените "your_super_secret_jwt_key_here" на случайную строку для JWT');
+    console.log('2. Настройте DATABASE_URL для вашей базы данных');
+    console.log('3. Запустите сервер: npm run dev');
     console.log('\n🧪 Для тестирования email используйте:');
     console.log('POST /api/test/email');
     console.log('Body: { "template": "test", "to": "test@example.com" }');

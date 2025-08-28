@@ -128,7 +128,7 @@
 
         async function testOAuthConfig() {
             try {
-                const response = await fetch(`${SERVER_URL}/api/test/github-oauth`);
+                // GitHub OAuth test removed
                 const data = await response.json();
                 showResult('oauthResult', data, data.success ? 'success' : 'error');
             } catch (error) {

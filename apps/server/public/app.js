@@ -36,9 +36,7 @@ const showRegisterBtn = document.getElementById('showRegisterBtn');
 const showLoginBtn = document.getElementById('showLoginBtn');
 const backToRegisterBtn = document.getElementById('backToRegisterBtn');
 
-// OAuth buttons
-const githubLoginBtn = document.getElementById('githubLoginBtn');
-const githubLoginFromRegisterBtn = document.getElementById('githubLoginFromRegisterBtn');
+// OAuth buttons removed
 const emailLoginBtn = document.getElementById('emailLoginBtn');
 
 // Other elements
@@ -234,23 +232,29 @@ function showStatus(message, type = 'info') {
   }, 4000);
 }
 
+function isValidDate(date) {
+  return date instanceof Date && !isNaN(date.getTime());
+}
+
 function formatTime(timestamp) {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const date = timestamp ? new Date(timestamp) : new Date();
+  const safeDate = isValidDate(date) ? date : new Date();
+  return safeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function formatDate(timestamp) {
-  const date = new Date(timestamp);
+  const date = timestamp ? new Date(timestamp) : new Date();
+  const safeDate = isValidDate(date) ? date : new Date();
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
   
-  if (date.toDateString() === today.toDateString()) {
+  if (safeDate.toDateString() === today.toDateString()) {
     return 'Today';
-  } else if (date.toDateString() === yesterday.toDateString()) {
+  } else if (safeDate.toDateString() === yesterday.toDateString()) {
     return 'Yesterday';
   } else {
-    return date.toLocaleDateString();
+    return safeDate.toLocaleDateString();
   }
 }
 
@@ -277,16 +281,19 @@ function addMessage(messageData, isOwn = false, isSystem = false) {
   } else {
     messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
     
-    const avatar = createAvatarElement(messageData.username, 32);
+    const safeUsername = (messageData && messageData.username) ? messageData.username : 'User';
+    const safeContent = (messageData && messageData.content != null) ? String(messageData.content) : '';
+    const safeTimestamp = (messageData && messageData.timestamp) ? messageData.timestamp : new Date();
+    const avatar = createAvatarElement(safeUsername, 32);
     
     messageDiv.innerHTML = `
       <div class="message-avatar">${!isOwn ? avatar.outerHTML : ''}</div>
       <div class="message-body">
         <div class="message-header">
-          <span class="message-author">${escapeHtml(messageData.username)}</span>
-          <span class="message-time">${formatTime(messageData.timestamp)}</span>
+          <span class="message-author">${escapeHtml(safeUsername)}</span>
+          <span class="message-time">${formatTime(safeTimestamp)}</span>
         </div>
-        <div class="message-content">${escapeHtml(messageData.content)}</div>
+        <div class="message-content">${escapeHtml(safeContent)}</div>
       </div>
     `;
   }
@@ -879,18 +886,7 @@ if (backToRegisterBtn) {
   });
 }
 
-// GitHub OAuth handlers
-if (githubLoginBtn) {
-  githubLoginBtn.addEventListener('click', () => {
-    window.location.href = '/api/auth/github';
-  });
-}
-
-if (githubLoginFromRegisterBtn) {
-  githubLoginFromRegisterBtn.addEventListener('click', () => {
-    window.location.href = '/api/auth/github';
-  });
-}
+// GitHub OAuth removed
 
 // Remove emailLoginBtn behavior (button removed from DOM)
 
@@ -898,21 +894,7 @@ if (githubLoginFromRegisterBtn) {
 document.addEventListener('DOMContentLoaded', () => {
   if (loginEmailInput) loginEmailInput.focus();
   
-  // Handle token returned via query param after OAuth callback
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (token) {
-      localStorage.setItem('accessToken', token);
-      const url = new URL(window.location.href);
-      url.searchParams.delete('token');
-      window.history.replaceState({}, '', url.toString());
-      showStatus('Успешный вход через GitHub', 'success');
-      
-      // Auto-login with token
-      socket.emit('authenticate_with_token', { token });
-    }
-  } catch (_) {}
+  // OAuth token callback handling removed
 
   // If there's already a stored token (e.g., username/password or previous OAuth), try to auto-login
   try {

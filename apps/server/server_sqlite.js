@@ -93,53 +93,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// GitHub OAuth endpoint
-app.get('/api/auth/github', (req, res) => {
-    // Redirect to GitHub OAuth
-    const clientId = process.env.GITHUB_CLIENT_ID || 'your-github-client-id';
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/github/callback`;
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
-    
-    res.redirect(githubAuthUrl);
-});
-
-app.get('/api/auth/github/callback', (req, res) => {
-    const { code } = req.query;
-    
-    if (!code) {
-        return res.redirect('/?error=github_auth_failed');
-    }
-    
-    // In a real implementation, you would exchange the code for an access token
-    // and fetch user data from GitHub API
-    // For now, we'll simulate a successful login
-    
-    const mockUser = {
-        id: Date.now(),
-        username: `github_user_${Date.now()}`,
-        email: `github_${Date.now()}@example.com`,
-        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}&backgroundColor=6366f1`
-    };
-    
-    // Store user in database
-    db.run(
-        `INSERT OR REPLACE INTO users (username, email, github_id, avatar_url, email_verified, is_oauth_user) 
-         VALUES (?, ?, ?, ?, 1, 1)`,
-        [mockUser.username, mockUser.email, mockUser.id.toString(), mockUser.avatar_url],
-        function(err) {
-            if (err) {
-                console.error('Error saving GitHub user:', err);
-                return res.redirect('/?error=github_auth_failed');
-            }
-            
-            // Generate a simple token (in production, use JWT)
-            const token = Buffer.from(JSON.stringify(mockUser)).toString('base64');
-            
-            // Redirect back to the app with token
-            res.redirect(`/?token=${token}`);
-        }
-    );
-});
+// Removed GitHub OAuth endpoints
 
 // API endpoints for authentication
 app.post('/api/auth/register', (req, res) => {

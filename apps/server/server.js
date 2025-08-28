@@ -61,16 +61,7 @@ app.post('/api/auth/login', loginHandler);
 
 // GitHub OAuth endpoint
 app.get('/api/auth/github', (req, res) => {
-    // Redirect to GitHub OAuth
-    const clientId = process.env.GITHUB_CLIENT_ID;
-    if (!clientId) {
-        return res.status(500).json({ error: 'GitHub Client ID not configured' });
-    }
-    // Use the configured callback URL from environment
-    const redirectUri = process.env.GITHUB_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/github/callback`;
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
-    
-    res.redirect(githubAuthUrl);
+    res.status(404).json({ error: 'GitHub OAuth disabled' });
 });
 
 app.get('/api/auth/github/callback', async (req, res) => {
@@ -639,9 +630,15 @@ io.on('connection', (socket) => {
         }
         
         try {
+            const rawContent = (data && data.content != null) ? String(data.content) : '';
+            const trimmedContent = rawContent.trim();
+            if (!trimmedContent) {
+                socket.emit('server_error', { message: 'Message cannot be empty' });
+                return;
+            }
             const result = await query(
                 'INSERT INTO messages (user_id, room_id, content) VALUES ($1, $2, $3) RETURNING *',
-                [socket.userId, data.roomId || 1, data.content]
+                [socket.userId, data.roomId || 1, trimmedContent]
             );
             
             const message = result.rows[0];
@@ -652,12 +649,12 @@ io.on('connection', (socket) => {
                 [socket.userId]
             );
                 
-                const messageData = {
+            const messageData = {
                 id: message.id,
                 userId: message.user_id,
                 username: userResult.rows[0].username,
-                content: message.content,
-                timestamp: message.timestamp,
+                content: message.content || trimmedContent,
+                timestamp: message.timestamp || new Date().toISOString(),
                 roomId: message.room_id
             };
             
