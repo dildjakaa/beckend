@@ -33,22 +33,26 @@ module.exports = async function handler(req, res) {
     }
 
     // Check if username already exists
+    console.log('Checking if username exists:', username);
     const existingUser = await query(
       'SELECT id FROM users WHERE username = $1',
       [username]
     );
 
     if (existingUser.rows.length > 0) {
+      console.log('Username already exists:', username);
       return badRequest(res, 'Пользователь с таким именем уже существует');
     }
 
     // Check if email already exists
+    console.log('Checking if email exists:', email);
     const existingEmail = await query(
       'SELECT id FROM users WHERE email = $1',
       [email]
     );
 
     if (existingEmail.rows.length > 0) {
+      console.log('Email already exists:', email);
       return badRequest(res, 'Пользователь с таким email уже существует');
     }
 
