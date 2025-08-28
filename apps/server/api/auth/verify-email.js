@@ -9,14 +9,14 @@ module.exports = async function handler(req, res) {
   try {
     const { code, email } = req.body;
 
-    // Validation
-    if (!code || String(code).trim().length !== 6) {
+    // Normalize input (strip spaces and non-digits from code)
+    const normalizedEmail = email ? String(email).trim() : null;
+    const normalizedCode = String(code).replace(/\D/g, '').slice(0, 6);
+
+    // Validation: must be exactly 6 digits
+    if (!normalizedCode || normalizedCode.length !== 6) {
       return badRequest(res, 'Неверный код подтверждения');
     }
-
-    // Normalize input
-    const normalizedEmail = email ? String(email).trim() : null;
-    const normalizedCode = String(code).trim();
 
     let user;
 
@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
       if (candidate.email_verified) {
         return badRequest(res, 'Email уже подтвержден');
       }
-      if (String(candidate.verification_code || '').trim() !== normalizedCode) {
+      if (String(candidate.verification_code || '').replace(/\D/g, '').slice(0, 6) !== normalizedCode) {
         return badRequest(res, 'Неверный код подтверждения');
       }
       user = candidate;
