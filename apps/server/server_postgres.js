@@ -293,27 +293,34 @@ io.on('connection', (socket) => {
     });
     
     socket.on('join_room', async (data) => {
+        console.log('Received join_room:', data);
+        
         if (!socket.userId) {
+            console.log('User not authenticated for join_room');
             socket.emit('error', { message: 'Not authenticated' });
             return;
         }
         
         try {
+            console.log('Getting room messages for room:', data.roomId || 1);
+            
             // Get room messages
             const messagesResult = await query(
                 `SELECT m.*, u.username 
              FROM messages m 
              JOIN users u ON m.user_id = u.id 
                  WHERE m.room_id = $1 
-             ORDER BY m.timestamp DESC 
+             ORDER BY m.timestamp ASC 
              LIMIT 50`,
                 [data.roomId || 1]
             );
             
+            console.log('Found messages:', messagesResult.rows.length);
+            
             socket.emit('room_joined', {
                 success: true,
                 roomId: data.roomId || 1,
-                messages: messagesResult.rows.reverse()
+                messages: messagesResult.rows
             });
             
         } catch (error) {
@@ -335,12 +342,58 @@ io.on('connection', (socket) => {
             );
             
             const message = result.rows[0];
-            io.emit('message', {
+            io.emit('new_message', {
                 id: message.id,
-                userId: message.userId,
+                userId: socket.userId,
                 username: socket.username,
                 content: message.content,
-                timestamp: message.timestamp
+                timestamp: message.timestamp,
+                roomId: data.roomId || 1
+            });
+        } catch (error) {
+            console.error('Error saving message:', error);
+        }
+    });
+    
+    // Handle send_message event (frontend compatibility)
+    socket.on('send_message', async (data) => {
+        console.log('Received send_message:', data);
+        
+        if (!socket.userId) {
+            console.log('User not authenticated for send_message');
+            socket.emit('error', { message: 'Not authenticated' });
+            return;
+        }
+        
+        try {
+            console.log('Saving message to database:', {
+                userId: socket.userId,
+                roomId: data.roomId || 1,
+                content: data.content
+            });
+            
+            const result = await query(
+                'INSERT INTO messages (user_id, room_id, content) VALUES ($1, $2, $3) RETURNING *',
+                [socket.userId, data.roomId || 1, data.content]
+            );
+            
+            const message = result.rows[0];
+            console.log('Message saved, broadcasting:', {
+                id: message.id,
+                userId: socket.userId,
+                username: socket.username,
+                content: message.content,
+                timestamp: message.timestamp,
+                roomId: data.roomId || 1
+            });
+            
+            io.emit('new_message', {
+                id: message.id,
+                userId: socket.userId,
+                username: socket.username,
+                content: message.content,
+                timestamp: message.timestamp,
+                roomId: data.roomId || 1
             });
         } catch (error) {
             console.error('Error saving message:', error);
