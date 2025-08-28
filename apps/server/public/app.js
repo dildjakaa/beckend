@@ -644,7 +644,7 @@ if (emailVerificationForm) {
     e.preventDefault();
     
     const code = verificationCodeInput ? verificationCodeInput.value.trim() : '';
-    const emailForVerification = verificationEmailSpan ? verificationEmailSpan.textContent : '';
+    const emailForVerification = verificationEmailSpan ? verificationEmailSpan.textContent.trim() : '';
     
     if (!code || code.length !== 6) {
       showStatus('Пожалуйста, введите 6-значный код', 'error');
