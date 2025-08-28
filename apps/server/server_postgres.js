@@ -219,6 +219,15 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+
+// Ensure database schema exists before starting the server
+initializeDatabase()
+  .catch((err) => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  })
+  .finally(() => {
+    server.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+  });
