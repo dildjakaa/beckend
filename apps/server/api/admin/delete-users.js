@@ -13,11 +13,11 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Check admin password
-  const adminPassword = req.headers['x-admin-password'];
-  if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  // No password required for basic admin panel
+  // const adminPassword = req.headers['x-admin-password'];
+  // if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+  //   return res.status(401).json({ error: 'Unauthorized' });
+  // }
 
   try {
     // Delete messages first due to FK constraints

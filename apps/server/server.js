@@ -26,6 +26,7 @@ const adminLogsHandler = require('./api/admin/logs.js');
 const adminClearLogsHandler = require('./api/admin/clear-logs.js');
 const adminDeleteUsersHandler = require('./api/admin/delete-users.js');
 const adminDeleteMessagesHandler = require('./api/admin/delete-messages.js');
+const adminSendSupportMessageHandler = require('./api/admin/send-support-message.js');
 
 // Store connected users
 const connectedUsers = new Map();
@@ -54,6 +55,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Serve admin panel
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-panel.html'));
+});
+
 // Health check endpoint for Render
 app.get('/api', (req, res) => {
     res.json({ success: true, message: 'OK' });
@@ -75,6 +81,7 @@ app.get('/api/admin/logs', adminLogsHandler);
 app.post('/api/admin/clear-logs', adminClearLogsHandler);
 app.post('/api/admin/delete-users', adminDeleteUsersHandler);
 app.post('/api/admin/delete-messages', adminDeleteMessagesHandler);
+app.post('/api/admin/send-support-message', adminSendSupportMessageHandler);
 
 // GitHub OAuth endpoint
 app.get('/api/auth/github', (req, res) => {
