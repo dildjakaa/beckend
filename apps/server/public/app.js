@@ -664,7 +664,8 @@ if (emailVerificationForm) {
   // Determine flow: login vs registration
   const isLoginFlow = emailLoginContext.email && emailLoginContext.email.toLowerCase() === (emailForVerification || '').toLowerCase();
   const url = isLoginFlow ? '/api/auth/login-email-verify' : '/api/auth/verify-email';
-  const payload = isLoginFlow ? { email: emailForVerification, code } : { code };
+  // Send email alongside code for registration flow too, to disambiguate on server
+  const payload = isLoginFlow ? { email: emailForVerification, code } : { code, email: emailForVerification };
 
   // Send verification request
   fetch(url, {
