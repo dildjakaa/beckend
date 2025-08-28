@@ -14,26 +14,46 @@ module.exports = async function handler(req, res) {
       return badRequest(res, 'Неверный код подтверждения');
     }
 
-    // Find user with this verification code (and optional email to disambiguate)
+    // Normalize input
     const normalizedEmail = email ? String(email).trim() : null;
     const normalizedCode = String(code).trim();
-    const params = normalizedEmail ? [normalizedCode, normalizedEmail] : [normalizedCode];
-    const userResult = await query(
-      email
-        ? `SELECT id, username, email, verification_code, verification_code_expires 
-           FROM users 
-           WHERE verification_code = $1 AND LOWER(email) = LOWER($2) AND email_verified = false`
-        : `SELECT id, username, email, verification_code, verification_code_expires 
-           FROM users 
-           WHERE verification_code = $1 AND email_verified = false`,
-      params
-    );
 
-    if (userResult.rows.length === 0) {
-      return badRequest(res, 'Неверный код подтверждения');
+    let user;
+
+    if (normalizedEmail) {
+      // Primary: find by email first to produce clearer errors
+      const byEmail = await query(
+        `SELECT id, username, email, email_verified, verification_code, verification_code_expires 
+         FROM users WHERE LOWER(email) = LOWER($1)`,
+        [normalizedEmail]
+      );
+
+      if (byEmail.rows.length === 0) {
+        return badRequest(res, 'Пользователь с таким email не найден');
+      }
+
+      const candidate = byEmail.rows[0];
+      if (candidate.email_verified) {
+        return badRequest(res, 'Email уже подтвержден');
+      }
+      if (String(candidate.verification_code || '').trim() !== normalizedCode) {
+        return badRequest(res, 'Неверный код подтверждения');
+      }
+      user = candidate;
+    } else {
+      // Fallback: find by code only (legacy flow)
+      const userResult = await query(
+        `SELECT id, username, email, verification_code, verification_code_expires 
+         FROM users 
+         WHERE verification_code = $1 AND email_verified = false`,
+        [normalizedCode]
+      );
+
+      if (userResult.rows.length === 0) {
+        return badRequest(res, 'Неверный код подтверждения');
+      }
+      user = userResult.rows[0];
     }
-
-    const user = userResult.rows[0];
 
     // Check if code is expired
     if (new Date() > new Date(user.verification_code_expires)) {
