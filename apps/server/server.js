@@ -16,6 +16,7 @@ app.use(express.json());
 // Import API routes
 const registerHandler = require('./api/auth/register_test.js');
 const verifyEmailHandler = require('./api/auth/verify-email.js');
+const loginEmailVerifyHandler = require('./api/auth/login-email-verify.js');
 const resendCodeHandler = require('./api/auth/resend-code.js');
 const loginHandler = require('./api/auth/login.js');
 const healthHandler = require('./api/health.js');
@@ -56,6 +57,7 @@ app.get('/api/ping', pingHandler);
 // API Routes
 app.post('/api/auth/register', registerHandler);
 app.post('/api/auth/verify-email', verifyEmailHandler);
+app.post('/api/auth/login-email-verify', loginEmailVerifyHandler);
 app.post('/api/auth/resend-code', resendCodeHandler);
 app.post('/api/auth/login', loginHandler);
 
