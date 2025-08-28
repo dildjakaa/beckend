@@ -542,7 +542,7 @@ if (loginForm) {
       const token = data && (data.token || (data.data && data.data.token));
       if (data.success && token) {
         localStorage.setItem('accessToken', token);
-        socket.emit('authenticate_with_token', { token: data.token });
+        socket.emit('authenticate_with_token', { token });
       } else {
         showStatus(data.error || 'Ошибка входа', 'error');
       }
@@ -680,10 +680,11 @@ if (emailVerificationForm) {
   .then(response => response.json())
   .then(data => {
     if (data.success) {
-      if (isLoginFlow && data.token) {
-        localStorage.setItem('accessToken', data.token);
+      const token = data && (data.token || (data.data && data.data.token));
+      if (isLoginFlow && token) {
+        localStorage.setItem('accessToken', token);
         showStatus('Вход по email выполнен', 'success');
-        socket.emit('authenticate_with_token', { token: data.token });
+        socket.emit('authenticate_with_token', { token });
         emailLoginContext.email = null;
       } else {
         showStatus('Email подтвержден! Теперь вы можете войти', 'success');
