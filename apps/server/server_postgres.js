@@ -59,6 +59,18 @@ async function initializeDatabase() {
             )
         `);
 
+        // Ensure required columns exist on existing databases
+        await query(`
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE,
+            ADD COLUMN IF NOT EXISTS github_id VARCHAR(255) UNIQUE,
+            ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10),
+            ADD COLUMN IF NOT EXISTS verification_code_expires TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS is_oauth_user BOOLEAN DEFAULT FALSE;
+        `);
+
         // Create chat_rooms table
         await query(`
             CREATE TABLE IF NOT EXISTS chat_rooms (
