@@ -20,6 +20,13 @@ const loginEmailVerifyHandler = require('./api/auth/login-email-verify.js');
 const resendCodeHandler = require('./api/auth/resend-code.js');
 const loginHandler = require('./api/auth/login.js');
 
+// Admin API handlers
+const adminLogsHandler = require('./api/admin/logs.js');
+const adminClearLogsHandler = require('./api/admin/clear-logs.js');
+const adminDeleteUsersHandler = require('./api/admin/delete-users.js');
+const adminDeleteMessagesHandler = require('./api/admin/delete-messages.js');
+const adminSendSupportMessageHandler = require('./api/admin/send-support-message.js');
+
 // Store connected users
 const connectedUsers = new Map();
 const userRooms = new Map();
@@ -131,6 +138,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Serve admin panel
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-panel.html'));
+});
+
 // Health check endpoint for Render
 app.get('/api', (req, res) => {
     res.json({ success: true, message: 'OK' });
@@ -142,6 +154,13 @@ app.post('/api/auth/verify-email', verifyEmailHandler);
 app.post('/api/auth/login-email-verify', loginEmailVerifyHandler);
 app.post('/api/auth/resend-code', resendCodeHandler);
 app.post('/api/auth/login', loginHandler);
+
+// Admin routes
+app.get('/api/admin/logs', adminLogsHandler);
+app.post('/api/admin/clear-logs', adminClearLogsHandler);
+app.post('/api/admin/delete-users', adminDeleteUsersHandler);
+app.post('/api/admin/delete-messages', adminDeleteMessagesHandler);
+app.post('/api/admin/send-support-message', adminSendSupportMessageHandler);
 
 // Test endpoints
 // Removed GitHub OAuth testing endpoint
