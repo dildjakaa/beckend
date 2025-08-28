@@ -10,12 +10,14 @@ module.exports = async function handler(req, res) {
     const { code, email } = req.body;
 
     // Validation
-    if (!code || code.length !== 6) {
+    if (!code || String(code).trim().length !== 6) {
       return badRequest(res, 'Неверный код подтверждения');
     }
 
     // Find user with this verification code (and optional email to disambiguate)
-    const params = email ? [code, email] : [code];
+    const normalizedEmail = email ? String(email).trim() : null;
+    const normalizedCode = String(code).trim();
+    const params = normalizedEmail ? [normalizedCode, normalizedEmail] : [normalizedCode];
     const userResult = await query(
       email
         ? `SELECT id, username, email, verification_code, verification_code_expires 
