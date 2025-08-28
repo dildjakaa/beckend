@@ -643,7 +643,8 @@ if (emailVerificationForm) {
   emailVerificationForm.addEventListener('submit', (e) => {
     e.preventDefault();
     
-    const code = verificationCodeInput ? verificationCodeInput.value.trim() : '';
+    // Sanitize input: keep only digits
+    const code = verificationCodeInput ? (verificationCodeInput.value || '').replace(/\D/g, '').slice(0, 6) : '';
     const emailForVerification = verificationEmailSpan ? verificationEmailSpan.textContent.trim() : '';
     
     if (!code || code.length !== 6) {
