@@ -24,12 +24,31 @@ async function initializeDatabase() {
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(50) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                avatar_url VARCHAR(500),
+                password_hash TEXT,
+                email VARCHAR(255) UNIQUE,
+                github_id VARCHAR(255) UNIQUE,
+                avatar_url TEXT,
+                email_verified BOOLEAN DEFAULT FALSE,
+                verification_code VARCHAR(10),
+                verification_code_expires TIMESTAMP WITH TIME ZONE,
                 theme_preference VARCHAR(10) DEFAULT 'light',
                 last_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                is_oauth_user BOOLEAN DEFAULT FALSE
             );
+        `);
+
+        // Ensure all required columns exist on existing databases
+        await pool.query(`
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE,
+            ADD COLUMN IF NOT EXISTS github_id VARCHAR(255) UNIQUE,
+            ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10),
+            ADD COLUMN IF NOT EXISTS verification_code_expires TIMESTAMP WITH TIME ZONE,
+            ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS is_oauth_user BOOLEAN DEFAULT FALSE;
         `);
         
         // Create chat_rooms table
