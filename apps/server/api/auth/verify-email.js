@@ -61,6 +61,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Verify email and clear verification code
+    console.log('Verifying email for user:', { id: user.id, username: user.username, email: user.email });
     await query(
       `UPDATE users 
        SET email_verified = true, 
@@ -70,6 +71,7 @@ module.exports = async function handler(req, res) {
        WHERE id = $1`,
       [user.id]
     );
+    console.log('Email verified successfully for user:', user.id);
 
     // Add user to general chat room
     await query(

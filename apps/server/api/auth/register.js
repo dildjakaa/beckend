@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
     }
 
     if (!tosAccepted) {
-      return badRequest(res, 'Вы должны принять условия соглашения и политику конфиденциальности');
+      return badRequest(res, 'Прими условия соглашения и политику конфиденциальности');
     }
 
     if (username.length < 3) {
@@ -54,6 +54,7 @@ module.exports = async function handler(req, res) {
 
     // Hash password
     const hashedPassword = await hashPassword(password);
+    console.log('Registration password hash:', { original: password, hashed: hashedPassword });
 
     // Generate verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();

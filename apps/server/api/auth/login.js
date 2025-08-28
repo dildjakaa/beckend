@@ -10,33 +10,46 @@ module.exports = async function handler(req, res) {
 
   try {
     const { username, email, password } = req.body;
+    
+    console.log('Login attempt:', { username, email, hasPassword: !!password });
 
     // Validate input
     if ((!username && !email) || !password) {
+      console.log('Login validation failed: missing fields');
       return badRequest(res, 'Имя пользователя или email и пароль обязательны');
     }
 
     // Find user
     const lookupBy = username ? 'username' : 'email';
     const value = username || email;
+    console.log('Looking up user by:', lookupBy, 'value:', value);
+    
     const userResult = await query(
       `SELECT id, username, password_hash, avatar_url, email, email_verified, created_at, last_seen, is_oauth_user FROM users WHERE ${lookupBy} = $1`,
       [value]
     );
 
     if (userResult.rows.length === 0) {
+      console.log('User not found');
       return unauthorized(res, 'Неверное имя пользователя или пароль');
     }
 
     const user = userResult.rows[0];
+    console.log('User found:', { id: user.id, username: user.username, email: user.email, emailVerified: user.email_verified, isOAuth: user.is_oauth_user });
 
     // Check if email is verified (for non-OAuth users)
     if (user.email && !user.email_verified && !user.is_oauth_user) {
+      console.log('Email not verified');
       return unauthorized(res, 'Пожалуйста, подтвердите ваш email перед входом');
     }
 
     // Verify password
-    if (!comparePassword(password, user.password_hash)) {
+    console.log('Comparing passwords:', { inputPassword: password, storedHash: user.password_hash });
+    const passwordMatch = comparePassword(password, user.password_hash);
+    console.log('Password match result:', passwordMatch);
+    
+    if (!passwordMatch) {
+      console.log('Password verification failed');
       return unauthorized(res, 'Неверное имя пользователя или пароль');
     }
 
