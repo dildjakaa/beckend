@@ -52,6 +52,13 @@ const currentChatName = document.getElementById('currentChatName');
 const currentChatStatus = document.getElementById('currentChatStatus');
 const newChatBtn = document.getElementById('newChatBtn');
 const chatList = document.querySelector('.chat-list');
+// Tabs and friends UI
+const tabChats = document.getElementById('tabChats');
+const tabFriends = document.getElementById('tabFriends');
+const chatsSection = document.getElementById('chatsSection');
+const friendsSection = document.getElementById('friendsSection');
+const friendsList = document.getElementById('friendsList');
+const addFriendBtn = document.getElementById('addFriendBtn');
 
 // Invitation modal elements
 const ENABLE_PRIVATE = true;
@@ -108,6 +115,7 @@ let isConnected = false;
 let currentRoom = { id: 1, name: 'General Chat', type: 'general' };
 let onlineUsers = new Map();
 let theme = localStorage.getItem('theme') || 'dark';
+const directRooms = new Map(); // roomId -> { id, name, type }
 
 // Initialize theme
 document.documentElement.setAttribute('data-theme', theme);
@@ -372,6 +380,24 @@ function switchChat(room) {
   socket.emit('join_room', { roomId: currentRoom.id, roomType: currentRoom.type });
 }
 
+// Tabs toggle
+function showChats() {
+  if (!tabChats || !tabFriends || !chatsSection || !friendsSection) return;
+  tabChats.classList.add('active');
+  tabFriends.classList.remove('active');
+  chatsSection.style.display = '';
+  friendsSection.style.display = 'none';
+}
+
+function showFriends() {
+  if (!tabChats || !tabFriends || !chatsSection || !friendsSection) return;
+  tabFriends.classList.add('active');
+  tabChats.classList.remove('active');
+  chatsSection.style.display = 'none';
+  friendsSection.style.display = '';
+  try { socket.emit('friends:list'); } catch (_) {}
+}
+
 // Socket Event Handlers
 socket.on('connect', () => {
   console.log('Connected to server');
@@ -469,6 +495,35 @@ socket.on('token_auth_success', (data) => {
 
 socket.on('token_auth_error', (data) => {
   showStatus(data.error || 'Ошибка аутентификации по токену', 'error');
+});
+
+// Receive user rooms after auth
+socket.on('user_rooms', ({ rooms }) => {
+  if (!Array.isArray(rooms)) return;
+  rooms.forEach(r => {
+    const roomId = String(r.id);
+    if (roomId !== '1') {
+      directRooms.set(roomId, { id: r.id, name: r.name || `Chat ${r.id}`, type: r.room_type || 'private' });
+      let chatItem = document.querySelector(`[data-room-id="${roomId}"]`);
+      if (!chatItem) {
+        const item = document.createElement('div');
+        item.className = 'chat-item';
+        item.setAttribute('data-room-id', roomId);
+        item.setAttribute('data-room-type', r.room_type || 'private');
+        item.innerHTML = `
+          <div class="chat-avatar"><div class="avatar-placeholder">#</div></div>
+          <div class="chat-info">
+            <div class="chat-name">${escapeHtml(r.name || 'Private chat')}</div>
+            <div class="chat-last-message"></div>
+          </div>
+          <div class="chat-meta"><div class="unread-count" style="display: none;">0</div></div>
+        `;
+        item.addEventListener('click', () => switchChat({ id: r.id, name: r.name || 'Private chat', type: r.room_type || 'private' }));
+        const list = document.querySelector('.chat-list');
+        if (list) list.appendChild(item);
+      }
+    }
+  });
 });
 
 socket.on('new_message', (messageData) => {
@@ -929,6 +984,59 @@ if (newChatBtn) {
   });
 }
 
+// Tabs handlers
+if (tabChats && tabFriends) {
+  tabChats.addEventListener('click', showChats);
+  tabFriends.addEventListener('click', showFriends);
+}
+
+// Add friend prompt
+if (addFriendBtn) {
+  addFriendBtn.addEventListener('click', () => {
+    const username = prompt('Введите имя пользователя для добавления в друзья:');
+    if (username && username.trim()) {
+      try { socket.emit('friends:request', { username: username.trim() }); } catch (_) {}
+    }
+  });
+}
+
+// Friends events rendering
+socket.on('friends:list', ({ friends }) => {
+  if (!friendsList) return;
+  friendsList.innerHTML = '';
+  (friends || []).forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'user-item';
+    item.innerHTML = `
+      <div class="user-avatar">${getAvatarInitials(f.username)}</div>
+      <span class="user-name">${escapeHtml(f.username)}</span>
+      <span class="friend-status" style="margin-left:auto; font-size:0.75rem; opacity:0.8;">${escapeHtml(f.status || '')}</span>
+    `;
+    item.addEventListener('click', () => {
+      if ((f.status || '') === 'accepted') {
+        showStatus('Открывайте диалог через список чатов или пригласите заново, если не появился', 'info');
+      } else if ((f.status || '') === 'pending') {
+        showStatus('Заявка в друзья в ожидании', 'info');
+      }
+    });
+    friendsList.appendChild(item);
+  });
+});
+
+socket.on('friends:request', ({ from }) => {
+  const accept = confirm(`Пользователь ${from} хочет добавить вас в друзья. Принять?`);
+  try { socket.emit('friends:respond', { from, accept }); } catch (_) {}
+});
+
+socket.on('friends:request:ok', ({ to }) => {
+  showStatus(`Заявка отправлена пользователю ${to}`, 'success');
+});
+
+socket.on('friends:update', ({ user, accepted }) => {
+  showStatus(accepted ? `Вы теперь друзья с ${user}` : `${user} отклонил заявку`, accepted ? 'success' : 'info');
+  try { socket.emit('friends:list'); } catch (_) {}
+});
+
 // General chat click handler
 const generalChatItem = document.querySelector('.chat-item');
 if (generalChatItem) {
@@ -1227,11 +1335,29 @@ socket.on('invitation-received', (payload) => {
 // When a private chat begins
 const privateChats = new Map(); // chatId -> { name }
 let lastInviteTarget = null;
-socket.on('chat-started', ({ chatId }) => {
+socket.on('chat-started', ({ chatId, name, type }) => {
   if (!chatId) return;
-  const displayName = lastInviteTarget ? `Private chat with ${lastInviteTarget}` : 'Private chat';
+  const displayName = name || (lastInviteTarget ? `Private chat with ${lastInviteTarget}` : 'Private chat');
   privateChats.set(chatId, { name: displayName });
-  switchChat({ id: chatId, name: displayName, type: 'private' });
+  let chatItem = document.querySelector(`[data-room-id="${chatId}"]`);
+  if (!chatItem) {
+    const item = document.createElement('div');
+    item.className = 'chat-item';
+    item.setAttribute('data-room-id', String(chatId));
+    item.setAttribute('data-room-type', type || 'private');
+    item.innerHTML = `
+      <div class="chat-avatar"><div class="avatar-placeholder">#</div></div>
+      <div class="chat-info">
+        <div class="chat-name">${escapeHtml(displayName)}</div>
+        <div class="chat-last-message"></div>
+      </div>
+      <div class="chat-meta"><div class="unread-count" style="display: none;">0</div></div>
+    `;
+    item.addEventListener('click', () => switchChat({ id: chatId, name: displayName, type: type || 'private' }));
+    const list = document.querySelector('.chat-list');
+    if (list) list.appendChild(item);
+  }
+  switchChat({ id: chatId, name: displayName, type: type || 'private' });
   lastInviteTarget = null;
 });
 

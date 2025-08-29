@@ -37,6 +37,66 @@ const userRooms = new Map();
 const onlineUsers = new Map();
 const pendingInvitations = new Map();
 
+// Ensure required tables exist (friends system)
+async function ensureAuxTables() {
+    try {
+        await query(`
+            CREATE TABLE IF NOT EXISTS friends (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                friend_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, friend_id)
+            );
+        `, []);
+        // Optional helper index
+        await query(`CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);`, []);
+    } catch (e) {
+        console.error('Failed to ensure friends table:', e);
+    }
+}
+
+// Create or get an existing direct chat room for two users
+async function getOrCreateDirectRoom(userIdA, userIdB) {
+    const a = Number(userIdA);
+    const b = Number(userIdB);
+    const [minId, maxId] = a < b ? [a, b] : [b, a];
+    // Try find existing direct room with both participants
+    const existing = await query(
+        `SELECT cr.id, cr.name
+         FROM chat_rooms cr
+         WHERE cr.room_type = 'direct'
+           AND EXISTS (
+             SELECT 1 FROM chat_room_participants p1 WHERE p1.room_id = cr.id AND p1.user_id = $1
+           )
+           AND EXISTS (
+             SELECT 1 FROM chat_room_participants p2 WHERE p2.room_id = cr.id AND p2.user_id = $2
+           )
+         LIMIT 1`,
+        [minId, maxId]
+    );
+    if (existing.rows.length > 0) {
+        return existing.rows[0];
+    }
+    // Create new direct room and add both participants
+    const roomName = `Direct ${minId}-${maxId}`;
+    const newRoom = await query(
+        `INSERT INTO chat_rooms (name, room_type, created_by) VALUES ($1, 'direct', $2) RETURNING id, name`,
+        [roomName, minId]
+    );
+    const roomId = newRoom.rows[0].id;
+    await query(
+        `INSERT INTO chat_room_participants (room_id, user_id) VALUES ($1, $2) ON CONFLICT (room_id, user_id) DO NOTHING`,
+        [roomId, minId]
+    );
+    await query(
+        `INSERT INTO chat_room_participants (room_id, user_id) VALUES ($1, $2) ON CONFLICT (room_id, user_id) DO NOTHING`,
+        [roomId, maxId]
+    );
+    return { id: roomId, name: roomName };
+}
+
 // Helper function to broadcast online users
 function broadcastOnlineUsers() {
     const onlineUsers = Array.from(connectedUsers.values())
@@ -604,6 +664,17 @@ io.on('connection', (socket) => {
                 'INSERT INTO chat_room_participants (room_id, user_id) VALUES ($1, $2) ON CONFLICT (room_id, user_id) DO NOTHING',
                 [1, user.id]
             );
+            // Ensure friends table exists (idempotent)
+            ensureAuxTables().catch(() => {});
+            // Load user rooms (general + any direct/private)
+            const roomsResult = await query(
+                `SELECT cr.id, cr.name, cr.room_type
+                 FROM chat_rooms cr
+                 JOIN chat_room_participants p ON p.room_id = cr.id
+                 WHERE p.user_id = $1
+                 ORDER BY cr.id ASC`,
+                [user.id]
+            );
                     
                     // Send success response
                     socket.emit('token_auth_success', {
@@ -615,6 +686,7 @@ io.on('connection', (socket) => {
                     avatar_url: user.avatar_url
                         }
                     });
+                    socket.emit('user_rooms', { rooms: roomsResult.rows });
                     
                     // Broadcast online users
                     broadcastOnlineUsers();
@@ -710,17 +782,23 @@ io.on('connection', (socket) => {
 
             if (response === 'accept') {
                 invitation.status = 'accepted';
-                const { randomUUID } = require('crypto');
-                const chatId = randomUUID();
-                // Join both users to the private room
-                socket.join(chatId);
-                if (initiatorSocketId && io.sockets.sockets.get(initiatorSocketId)) {
-                    io.sockets.sockets.get(initiatorSocketId).join(chatId);
+                // Create/find persistent direct room in DB
+                const initiatorUser = await query('SELECT id FROM users WHERE username = $1 LIMIT 1', [invitation.from]);
+                if (!initiatorUser.rows.length) {
+                    socket.emit('server_error', { message: 'Initiator user not found' });
+                    return;
                 }
-                // Notify both users
-                socket.emit('chat-started', { chatId });
+                const room = await getOrCreateDirectRoom(initiatorUser.rows[0].id, socket.userId);
+                const roomId = String(room.id);
+                // Join both users to the room
+                try { socket.join(roomId); } catch (_) {}
+                if (initiatorSocketId && io.sockets.sockets.get(initiatorSocketId)) {
+                    try { io.sockets.sockets.get(initiatorSocketId).join(roomId); } catch (_) {}
+                }
+                // Notify both users with numeric room id
+                socket.emit('chat-started', { chatId: room.id, name: room.name, type: 'direct' });
                 if (initiatorSocketId) {
-                    io.to(initiatorSocketId).emit('chat-started', { chatId });
+                    io.to(initiatorSocketId).emit('chat-started', { chatId: room.id, name: room.name, type: 'direct' });
                 }
                 pendingInvitations.delete(invitationId);
             } else if (response === 'reject') {
@@ -735,6 +813,107 @@ io.on('connection', (socket) => {
         } catch (err) {
             console.error('respond-to-invitation error:', err);
             socket.emit('server_error', { message: 'Failed to process invitation response' });
+        }
+    });
+
+    // Friends: list
+    socket.on('friends:list', async () => {
+        if (!socket.userId) {
+            socket.emit('server_error', { message: 'Not authenticated' });
+            return;
+        }
+        try {
+            await ensureAuxTables();
+            const result = await query(
+                `SELECT f.friend_id AS id, u.username, f.status
+                 FROM friends f
+                 JOIN users u ON u.id = f.friend_id
+                 WHERE f.user_id = $1
+                 UNION ALL
+                 SELECT f.user_id AS id, u.username, f.status
+                 FROM friends f
+                 JOIN users u ON u.id = f.user_id
+                 WHERE f.friend_id = $1`,
+                [socket.userId]
+            );
+            socket.emit('friends:list', { friends: result.rows });
+        } catch (e) {
+            console.error('friends:list error', e);
+            socket.emit('server_error', { message: 'Failed to load friends' });
+        }
+    });
+
+    // Friends: request
+    socket.on('friends:request', async ({ username }) => {
+        if (!socket.userId || !username) {
+            socket.emit('server_error', { message: 'Invalid friend request' });
+            return;
+        }
+        try {
+            await ensureAuxTables();
+            const target = await query('SELECT id, username FROM users WHERE username = $1 LIMIT 1', [String(username).trim()]);
+            if (!target.rows.length) {
+                socket.emit('server_error', { message: 'User not found' });
+                return;
+            }
+            const targetId = target.rows[0].id;
+            if (Number(targetId) === Number(socket.userId)) {
+                socket.emit('server_error', { message: 'Cannot add yourself' });
+                return;
+            }
+            // Create reciprocal pending rows (optional single row approach simplified to single canonical direction)
+            const [minId, maxId] = Number(socket.userId) < Number(targetId)
+                ? [Number(socket.userId), Number(targetId)]
+                : [Number(targetId), Number(socket.userId)];
+            // Insert canonical pending row (user_id=min, friend_id=max)
+            await query(
+                `INSERT INTO friends (user_id, friend_id, status)
+                 VALUES ($1, $2, 'pending')
+                 ON CONFLICT (user_id, friend_id) DO NOTHING`,
+                [minId, maxId]
+            );
+            // Notify target if online
+            const targetSocketId = onlineUsers.get(targetId);
+            if (targetSocketId) {
+                io.to(targetSocketId).emit('friends:request', { from: socket.username });
+            }
+            socket.emit('friends:request:ok', { to: target.rows[0].username });
+        } catch (e) {
+            console.error('friends:request error', e);
+            socket.emit('server_error', { message: 'Failed to send friend request' });
+        }
+    });
+
+    // Friends: respond
+    socket.on('friends:respond', async ({ from, accept }) => {
+        if (!socket.userId || !from) {
+            socket.emit('server_error', { message: 'Invalid friend response' });
+            return;
+        }
+        try {
+            await ensureAuxTables();
+            const initiator = await query('SELECT id FROM users WHERE username = $1 LIMIT 1', [String(from).trim()]);
+            if (!initiator.rows.length) {
+                socket.emit('server_error', { message: 'User not found' });
+                return;
+            }
+            const initId = initiator.rows[0].id;
+            const [minId, maxId] = Number(initId) < Number(socket.userId)
+                ? [Number(initId), Number(socket.userId)]
+                : [Number(socket.userId), Number(initId)];
+            await query(
+                `UPDATE friends SET status = $3 WHERE user_id = $1 AND friend_id = $2`,
+                [minId, maxId, accept ? 'accepted' : 'declined']
+            );
+            // Echo updates
+            socket.emit('friends:respond:ok', { user: from, accepted: !!accept });
+            const initiatorSocketId = onlineUsers.get(initId);
+            if (initiatorSocketId) {
+                io.to(initiatorSocketId).emit('friends:update', { user: socket.username, accepted: !!accept });
+            }
+        } catch (e) {
+            console.error('friends:respond error', e);
+            socket.emit('server_error', { message: 'Failed to respond to friend request' });
         }
     });
 

@@ -129,11 +129,14 @@
             <!-- Sidebar -->
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <h3>Chats</h3>
-                    <button id="newChatBtn" class="new-chat-btn" title="New Chat">+</button>
+                    <div class="tabs">
+                        <button id="tabChats" class="tab-btn active" aria-selected="true">Чаты</button>
+                        <button id="tabFriends" class="tab-btn" aria-selected="false">Друзья</button>
+                    </div>
+                    <button id="newChatBtn" class="new-chat-btn" title="Новый чат">+</button>
                 </div>
                 
-                <div class="chat-list">
+                <div id="chatsSection" class="chat-list">
                     <div class="chat-item active" data-room-id="1" data-room-type="general">
                         <div class="chat-avatar">
                             <div class="avatar-placeholder">#</div>
@@ -146,6 +149,13 @@
                             <div class="unread-count" style="display: none;">0</div>
                         </div>
                     </div>
+                </div>
+
+                <div id="friendsSection" class="friends-section" style="display: none;">
+                    <div class="friends-actions">
+                        <button id="addFriendBtn" class="btn-secondary" title="Добавить друга">Добавить друга</button>
+                    </div>
+                    <div id="friendsList" class="users-list"></div>
                 </div>
 
                 <div class="online-users">
