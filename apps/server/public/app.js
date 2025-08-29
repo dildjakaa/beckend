@@ -47,7 +47,7 @@ const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const messageInput = document.getElementById('messageInput');
 const messagesDiv = document.getElementById('messages');
-const statusMessageDiv = document.getElementById('statusMessage'); //
+const statusMessageDiv = document.getElementById('statusMessage');
 
 // Discord-like interface elements
 const serverList = document.querySelector('.server-list');
@@ -120,6 +120,10 @@ let channels = {
 document.addEventListener('DOMContentLoaded', () => {
   initializeEventListeners();
   loadUserPreferences();
+  
+  // Set default active states
+  document.querySelector('[data-server-id="home"]')?.classList.add('active');
+  document.querySelector('[data-channel-id="general"]')?.classList.add('active');
 });
 
 // Event Listeners
@@ -194,7 +198,7 @@ async function handleLogin(e) {
     // Simulate login (replace with actual authentication)
     currentUser = {
       username: username,
-      avatar: `https://via.placeholder.com/32x32/5865f2/ffffff?text=${username.charAt(0).toUpperCase()}`,
+      avatar: generateAvatar(username),
       status: 'online'
     };
     
@@ -209,6 +213,58 @@ async function handleLogin(e) {
   } catch (error) {
     console.error('Login error:', error);
     showStatus('Login failed. Please try again.', 'error');
+  }
+}
+
+// Generate avatar for user
+function generateAvatar(username) {
+  const colors = ['#5865f2', '#3ba55c', '#ed4245', '#faa61a', '#9b59b6', '#e67e22'];
+  const color = colors[username.length % colors.length];
+  const initial = username.charAt(0).toUpperCase();
+  
+  // Create SVG avatar instead of external placeholder
+  return `data:image/svg+xml,${encodeURIComponent(`
+    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" fill="${color}" rx="16"/>
+      <text x="16" y="22" font-family="Arial, sans-serif" font-size="16" font-weight="bold" 
+            text-anchor="middle" fill="white">${initial}</text>
+    </svg>
+  `)}`;
+}
+
+// Join channel function
+function joinChannel(channelId) {
+  if (channelId === currentChannel) return;
+  
+  // Update active channel
+  document.querySelectorAll('.channel-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  const channelElement = document.querySelector(`[data-channel-id="${channelId}"]`);
+  if (channelElement) {
+    channelElement.classList.add('active');
+  }
+  
+  currentChannel = channelId;
+  
+  // Update channel info
+  const channel = channels[currentServer]?.find(c => c.id === channelId);
+  if (channel) {
+    currentChannelName.textContent = channel.name;
+    channelTopic.textContent = channel.topic;
+    messageInput.placeholder = `Message #${channel.name}`;
+  }
+  
+  // Clear messages for new channel
+  messagesDiv.innerHTML = '';
+  
+  // Load channel messages
+  loadChannelMessages(channelId);
+  
+  // Emit join room event to server
+  if (socket && isConnected) {
+    socket.emit('join_room', { roomId: channelId, roomType: 'text' });
   }
 }
 
@@ -265,7 +321,7 @@ function switchServer(serverId) {
   // Switch to first available channel
   const serverChannels = channels[serverId] || [];
   if (serverChannels.length > 0) {
-    switchChannel(serverChannels[0].id);
+    joinChannel(serverChannels[0].id);
   }
   
   // Update channel list
@@ -274,29 +330,7 @@ function switchServer(serverId) {
 
 // Channel switching
 function switchChannel(channelId) {
-  if (channelId === currentChannel) return;
-  
-  // Update active channel
-  document.querySelectorAll('.channel-item').forEach(item => {
-    item.classList.remove('active');
-  });
-  document.querySelector(`[data-channel-id="${channelId}"]`).classList.add('active');
-  
-  currentChannel = channelId;
-  
-  // Update channel info
-  const channel = channels[currentServer]?.find(c => c.id === channelId);
-  if (channel) {
-    currentChannelName.textContent = channel.name;
-    channelTopic.textContent = channel.topic;
-    messageInput.placeholder = `Message #${channel.name}`;
-  }
-  
-  // Clear messages for new channel
-  messagesDiv.innerHTML = '';
-  
-  // Load channel messages (implement with your backend)
-  loadChannelMessages(channelId);
+  joinChannel(channelId);
 }
 
 // Update channel list
@@ -306,23 +340,27 @@ function updateChannelList() {
   // Update text channels
   const textChannels = serverChannels.filter(c => c.type === 'text');
   const textChannelsList = document.querySelector('.channel-category:first-child .channel-list');
-  textChannelsList.innerHTML = textChannels.map(channel => `
-    <div class="channel-item" data-channel-id="${channel.id}">
-      <i class="fas fa-hashtag"></i>
-      <span>${channel.name}</span>
-    </div>
-  `).join('');
+  if (textChannelsList) {
+    textChannelsList.innerHTML = textChannels.map(channel => `
+      <div class="channel-item" data-channel-id="${channel.id}">
+        <i class="fas fa-hashtag"></i>
+        <span>${channel.name}</span>
+      </div>
+    `).join('');
+  }
   
   // Update voice channels
   const voiceChannels = serverChannels.filter(c => c.type === 'voice');
   const voiceChannelsList = document.querySelector('.channel-category:nth-child(2) .channel-list');
-  voiceChannelsList.innerHTML = voiceChannels.map(channel => `
-    <div class="channel-item voice-channel" data-channel-id="${channel.id}">
-      <i class="fas fa-volume-up"></i>
-      <span>${channel.name}</span>
-      <span class="voice-count">0</span>
-    </div>
-  `).join('');
+  if (voiceChannelsList) {
+    voiceChannelsList.innerHTML = voiceChannels.map(channel => `
+      <div class="channel-item voice-channel" data-channel-id="${channel.id}">
+        <i class="fas fa-volume-up"></i>
+        <span>${channel.name}</span>
+        <span class="voice-count">0</span>
+      </div>
+    `).join('');
+  }
   
   // Re-attach event listeners
   document.querySelectorAll('.channel-item').forEach(item => {
@@ -348,11 +386,13 @@ function handleMessageSubmit(e) {
   });
   
   // Send message to server
-  socket.emit('message', {
-    room: currentChannel,
-    message: message,
-    username: currentUser.username
-  });
+  if (socket && isConnected) {
+    socket.emit('message', {
+      room: currentChannel,
+      message: message,
+      username: currentUser.username
+    });
+  }
   
   // Clear input
   messageInput.value = '';
@@ -390,7 +430,7 @@ function loadChannelMessages(channelId) {
     addMessage({
       id: 1,
       username: 'System',
-      avatar: 'https://via.placeholder.com/32x32/5865f2/ffffff?text=S',
+      avatar: generateAvatar('System'),
       content: `Welcome to #${channelId}! Start chatting with your friends.`,
       timestamp: new Date(),
       isOwn: false
@@ -493,7 +533,7 @@ function addFriend() {
   // Add to friends list
   friends.push({
     username: username,
-    avatar: `https://via.placeholder.com/32x32/5865f2/ffffff?text=${username.charAt(0).toUpperCase()}`,
+    avatar: generateAvatar(username),
     status: 'offline'
   });
   
@@ -620,7 +660,7 @@ function loadUserPreferences() {
 socket.on('user_joined', (data) => {
   onlineUsers.set(data.username, {
     username: data.username,
-    avatar: `https://via.placeholder.com/32x32/5865f2/ffffff?text=${data.username.charAt(0).toUpperCase()}`,
+    avatar: generateAvatar(data.username),
     status: 'online'
   });
   
@@ -631,7 +671,7 @@ socket.on('user_joined', (data) => {
     addMessage({
       id: Date.now(),
       username: 'System',
-      avatar: 'https://via.placeholder.com/32x32/5865f2/ffffff?text=S',
+      avatar: generateAvatar('System'),
       content: `${data.username} joined the chat`,
       timestamp: new Date(),
       isOwn: false
@@ -648,7 +688,7 @@ socket.on('user_left', (data) => {
   addMessage({
     id: Date.now(),
     username: 'System',
-    avatar: 'https://via.placeholder.com/32x32/5865f2/ffffff?text=S',
+    avatar: generateAvatar('System'),
     content: `${data.username} left the chat`,
     timestamp: new Date(),
     isOwn: false
@@ -660,7 +700,7 @@ socket.on('message', (data) => {
     addMessage({
       id: Date.now(),
       username: data.username,
-      avatar: `https://via.placeholder.com/32x32/5865f2/ffffff?text=${data.username.charAt(0).toUpperCase()}`,
+      avatar: generateAvatar(data.username),
       content: data.message,
       timestamp: new Date(),
       isOwn: false
@@ -668,10 +708,25 @@ socket.on('message', (data) => {
   }
 });
 
-// Initialize with default channel
-document.addEventListener('DOMContentLoaded', () => {
-  // Set default active states
-  document.querySelector('[data-server-id="home"]').classList.add('active');
-  document.querySelector('[data-channel-id="general"]').classList.add('active');
+// Handle connection errors
+socket.on('connect_error', (error) => {
+  console.error('Connection error:', error);
+  showStatus('Failed to connect to server. Please check if the server is running.', 'error');
+  isConnected = false;
+});
+
+// Handle reconnection
+socket.on('reconnect', (attemptNumber) => {
+  console.log('Reconnected to server');
+  showStatus('Reconnected to server', 'success');
+  isConnected = true;
+});
+
+socket.on('reconnecting', (attemptNumber) => {
+  showStatus(`Reconnecting... (attempt ${attemptNumber})`, 'info');
+});
+
+socket.on('reconnect_failed', () => {
+  showStatus('Failed to reconnect to server', 'error');
 });
 
