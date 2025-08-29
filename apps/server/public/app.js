@@ -901,6 +901,14 @@ if (backToRegisterBtn) {
 // Auto-focus on email input when page loads
 document.addEventListener('DOMContentLoaded', () => {
   if (loginEmailInput) loginEmailInput.focus();
+  // Ensure invitation notification is hidden at boot
+  try {
+    const toast = document.getElementById('invitationNotification');
+    if (toast) {
+      toast.classList.remove('show');
+      toast.classList.remove('invitation-pulse');
+    }
+  } catch (_) {}
   
   // OAuth token callback handling removed
 
