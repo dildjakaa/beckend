@@ -21,7 +21,7 @@ node scripts/setup-corporate-email.js
 # GitHub OAuth Configuration
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
-GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
+GITHUB_CALLBACK_URL=https://krackenx.onrender.com/api/auth/github/callback
 
 # JWT Configuration
 JWT_SECRET=your_super_secret_jwt_key_here
@@ -34,7 +34,7 @@ SMTP_PASS=your_app_password
 SMTP_FROM=Kracken <your_corporate_email@gmail.com>
 
 # Frontend URL
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://krackenx.onrender.com
 
 # Database (PostgreSQL)
 DATABASE_URL=postgresql://username:password@localhost:5432/kracken_db
@@ -77,8 +77,8 @@ SMTP_FROM=Kracken <your_corporate_email@gmail.com>
 2. Нажмите "New OAuth App"
 3. Заполните форму:
    - **Application name**: Kracken Messenger
-   - **Homepage URL**: `http://localhost:3000` (для разработки)
-   - **Authorization callback URL**: `http://localhost:3000/api/auth/github/callback`
+   - **Homepage URL**: `https://krackenx.onrender.com` (для продакшена)
+- **Authorization callback URL**: `https://krackenx.onrender.com/api/auth/github/callback`
 4. Нажмите "Register application"
 5. Скопируйте `Client ID` и `Client Secret`
 
@@ -110,7 +110,7 @@ JWT_SECRET=сгенерированный_секрет
 ### Тест email конфигурации
 
 ```bash
-curl -X POST http://localhost:3000/api/test/email \
+curl -X POST https://krackenx.onrender.com/api/test/email \
   -H "Content-Type: application/json" \
   -d '{
     "template": "test",
@@ -121,12 +121,12 @@ curl -X POST http://localhost:3000/api/test/email \
 ### Тест GitHub OAuth конфигурации
 
 ```bash
-curl http://localhost:3000/api/test/github-oauth
+curl https://krackenx.onrender.com/api/test/github-oauth
 ```
 
 ### Тест полного OAuth flow
 
-1. Откройте в браузере: `http://localhost:3000/api/auth/github`
+1. Откройте в браузере: `https://krackenx.onrender.com/api/auth/github`
 2. Авторизуйтесь через GitHub
 3. Проверьте, что вы перенаправлены обратно с токеном
 
@@ -154,7 +154,7 @@ curl http://localhost:3000/api/test/github-oauth
 
 1. **Проверьте SMTP настройки**:
    ```bash
-   curl -X POST http://localhost:3000/api/test/email \
+   curl -X POST https://krackenx.onrender.com/api/test/email \
      -H "Content-Type: application/json" \
      -d '{"template": "test", "to": "your@email.com"}'
    ```
@@ -169,7 +169,7 @@ curl http://localhost:3000/api/test/github-oauth
 
 1. **Проверьте конфигурацию**:
    ```bash
-   curl http://localhost:3000/api/test/github-oauth
+   curl https://krackenx.onrender.com/api/test/github-oauth
    ```
 
 2. **Убедитесь, что callback URL совпадает** с настройками в GitHub

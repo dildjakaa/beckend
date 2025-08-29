@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electron', {
     setTheme: (theme) => ipcRenderer.invoke('set-theme', theme),
     getTheme: () => ipcRenderer.invoke('get-theme'),
     
+    // External browser
+    openExternal: (url) => ipcRenderer.invoke('open-external', url),
+    
     // Platform detection
     platform: process.platform,
     isDesktop: true,

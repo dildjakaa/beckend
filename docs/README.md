@@ -90,7 +90,7 @@ browser-messenger/
    ```
 
 6. **Access the application**
-   Open your browser and navigate to `http://localhost:3000`
+   Open your browser and navigate to `https://krackenx.onrender.com`
 
 ## Usage
 

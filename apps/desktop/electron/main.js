@@ -3,10 +3,11 @@ const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
 
 // Keep a global reference of the window object
+// будущие название корпрорации Aether Core Inc что бы не забыть 
 let mainWindow;
 
 // Production server URL
-const PRODUCTION_SERVER = 'https://krackenx.onrender.com';
+const PRODUCTION_SERVER = 'https://krackenx.onrender.com'; //prod server original 
 
 function createWindow() {
     // Create the browser window
@@ -61,6 +62,8 @@ function createWindow() {
 
     // Show window when ready
     mainWindow.once('ready-to-show', () => {
+        // Ensure the window is large enough and visible
+        try { mainWindow.maximize(); } catch (_) {}
         mainWindow.show();
         
         if (isDev) {
@@ -103,6 +106,11 @@ ipcMain.handle('get-theme', () => {
         theme: nativeTheme.themeSource,
         shouldUseDarkColors: nativeTheme.shouldUseDarkColors
     };
+});
+
+ipcMain.handle('open-external', (event, url) => {
+    shell.openExternal(url);
+    return true;
 });
 
 // App event handlers

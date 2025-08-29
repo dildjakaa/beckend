@@ -57,9 +57,9 @@ Set these in your Vercel dashboard:
 2. Set up environment variables in `.env`
 3. Run: `npm run vercel-dev`
 4. Test endpoints:
-   - http://localhost:3000/api/health
-   - POST http://localhost:3000/api/auth/register
-   - POST http://localhost:3000/api/auth/login
+   - https://krackenx.onrender.com/api/health
+- POST https://krackenx.onrender.com/api/auth/register
+- POST https://krackenx.onrender.com/api/auth/login
 
 ## Deployment Steps
 

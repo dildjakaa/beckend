@@ -1,18 +1,14 @@
-# GitHub OAuth и Email функционал для Kracken
+# Email функционал для Kracken
 
 ## Обзор
 
-Этот документ описывает как настроить GitHub OAuth аутентификацию и email функционал для вашего мессенджера Kracken.
+Этот документ описывает как настроить email функционал для вашего мессенджера Kracken. Поддержка GitHub OAuth удалена.
 
 **🌐 Продакшн сервер**: https://krackenx.onrender.com
 
 ## 🚀 Возможности
 
-### GitHub OAuth
-- ✅ Регистрация через GitHub
-- ✅ Автоматическое получение email и аватара
-- ✅ Безопасная аутентификация
-- ✅ Поддержка существующих пользователей
+<!-- GitHub OAuth раздел удален -->
 
 ### Email функционал
 - ✅ Приветственные письма
@@ -30,11 +26,6 @@
 Добавьте в ваш `.env` файл:
 
 ```env
-# GitHub OAuth
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-GITHUB_CALLBACK_URL=https://krackenx.onrender.com/api/auth/github/callback
-
 # JWT для токенов
 JWT_SECRET=your_super_secret_jwt_key
 
@@ -46,25 +37,21 @@ SMTP_PASS=your_app_password
 SMTP_FROM=Kracken <your_email@gmail.com>
 ```
 
-## 🔧 Настройка GitHub OAuth
+<!-- Раздел про GitHub OAuth удален -->
 
-### 1. Создание GitHub App
+### 1. Включение 2FA
 
 1. Перейдите на [GitHub Developer Settings](https://github.com/settings/developers)
-2. Нажмите "New OAuth App"
-3. Заполните форму:
-   - **Application name**: Kracken Messenger
-   - **Homepage URL**: `https://krackenx.onrender.com`
-   - **Authorization callback URL**: `https://krackenx.onrender.com/api/auth/github/callback`
-4. Нажмите "Register application"
-5. Скопируйте `Client ID` и `Client Secret`
+<!-- удалено -->
 
-### 2. Настройка переменных окружения
+### 2. Настройка Email (Gmail)
 
 ```env
-GITHUB_CLIENT_ID=ваш_client_id
-GITHUB_CLIENT_SECRET=ваш_client_secret
-GITHUB_CALLBACK_URL=https://krackenx.onrender.com/api/auth/github/callback
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=ваш_app_password
+SMTP_FROM=Kracken <your_email@gmail.com>
 ```
 
 ## 📧 Настройка Email (Gmail)
@@ -111,17 +98,15 @@ npm run dev
 
 ## 📡 API Endpoints
 
-### GitHub OAuth
-- `GET /api/auth/github` - Инициация OAuth
-- `GET /api/auth/github/callback` - Callback обработчик
+<!-- GitHub OAuth эндпоинты удалены -->
 
 ### Email
 - `POST /api/email/send` - Отправка email
 
 ### Тестовые эндпоинты (для продакшн)
-- `GET /api/test/github-oauth` - Проверка конфигурации OAuth
 - `POST /api/test/email` - Тестовая отправка email
 - `POST /api/test/oauth-register` - Тестовая регистрация OAuth пользователя
+<!-- Удален endpoint теста GitHub OAuth -->
 
 Пример использования email API:
 
@@ -148,10 +133,7 @@ fetch('/api/email/send', {
     })
 });
 
-// Тестирование OAuth конфигурации
-fetch('https://krackenx.onrender.com/api/test/github-oauth')
-    .then(response => response.json())
-    .then(data => console.log('OAuth config:', data));
+// Тестирование OAuth конфигурации удалено
 
 // Тестирование email отправки
 fetch('https://krackenx.onrender.com/api/test/email', {
@@ -169,11 +151,7 @@ fetch('https://krackenx.onrender.com/api/test/email', {
 
 ## 🔒 Безопасность
 
-### OAuth безопасность
-- ✅ Используется JWT для токенов
-- ✅ Проверка GitHub ID
-- ✅ Защита от CSRF атак
-- ✅ Безопасные callback URL
+<!-- Раздел безопасности OAuth удален -->
 
 ### Email безопасность
 - ✅ Валидация email адресов
@@ -190,21 +168,11 @@ fetch('https://krackenx.onrender.com/api/test/email', {
 SELECT * FROM email_logs ORDER BY sent_at DESC LIMIT 10;
 ```
 
-### Статистика OAuth
-```sql
-SELECT 
-    is_oauth_user,
-    COUNT(*) as user_count
-FROM users 
-GROUP BY is_oauth_user;
-```
+<!-- Статистика OAuth удалена -->
 
 ## 🐛 Устранение неполадок
 
-### GitHub OAuth не работает
-1. Проверьте правильность `GITHUB_CLIENT_ID` и `GITHUB_CLIENT_SECRET`
-2. Убедитесь, что callback URL совпадает с настройками в GitHub
-3. Проверьте логи сервера
+<!-- Траблшут GitHub OAuth удален -->
 
 ### Email не отправляется
 1. Проверьте SMTP настройки
@@ -224,14 +192,13 @@ verifyEmailConfig().then(console.log);
 ## 📈 Производительность
 
 ### PostgreSQL нагрузка
-- **OAuth**: ~1-2 запроса на пользователя
 - **Email**: ~1 запрос на отправку
 - **Логи**: ~1 запрос на письмо
 
 ### Масштабируемость
 - PostgreSQL легко потянет **миллионы пользователей**
 - Email отправка: **1000+ писем в час** (зависит от SMTP провайдера)
-- OAuth: **неограниченно** (GitHub API лимиты)
+<!-- OAuth масштабируемость удалена -->
 
 ## 💡 Рекомендации
 
@@ -243,7 +210,7 @@ verifyEmailConfig().then(console.log);
 
 ### Для разработки
 1. Используйте Mailtrap для тестирования
-2. Локальные GitHub OAuth настройки
+<!-- Локальные GitHub OAuth настройки удалены -->
 3. Отладочные логи
 
 ## 🔄 Обновления
@@ -253,10 +220,7 @@ verifyEmailConfig().then(console.log);
 2. Обновите API endpoint
 3. Протестируйте
 
-### Добавление других OAuth провайдеров
-1. Установите соответствующий passport strategy
-2. Добавьте поля в базу данных
-3. Создайте новые API endpoints
+<!-- Добавление других OAuth провайдеров удалено -->
 
 ---
 
