@@ -998,3 +998,55 @@ body {
     margin: var(--spacing-md);
   }
 }
+
+/* Form footer and switching */
+.form-footer {
+  margin-top: var(--spacing-lg);
+  text-align: center;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-primary);
+}
+
+.form-footer p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.form-footer a {
+  color: var(--discord-accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.form-footer a:hover {
+  color: var(--discord-accent-hover);
+  text-decoration: underline;
+}
+
+/* Checkbox styling */
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--discord-accent);
+}
+
+.checkbox-label a {
+  color: var(--discord-accent);
+  text-decoration: none;
+}
+
+.checkbox-label a:hover {
+  text-decoration: underline;
+}

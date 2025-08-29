@@ -137,6 +137,30 @@ function initializeEventListeners() {
   // Login form
   loginForm.addEventListener('submit', handleLogin);
   
+  // Registration form
+  const registerForm = document.getElementById('registerForm');
+  if (registerForm) {
+    registerForm.addEventListener('submit', handleRegister);
+  }
+  
+  // Form switching
+  const showRegisterBtn = document.getElementById('showRegisterBtn');
+  const showLoginBtn = document.getElementById('showLoginBtn');
+  
+  if (showRegisterBtn) {
+    showRegisterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      showRegistrationForm();
+    });
+  }
+  
+  if (showLoginBtn) {
+    showLoginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      showLoginForm();
+    });
+  }
+  
   // Message form
   messageForm.addEventListener('submit', handleMessageSubmit);
   
@@ -246,6 +270,59 @@ async function handleLogin(e) {
   }
 }
 
+// Registration handling
+async function handleRegister(e) {
+  e.preventDefault();
+  
+  const username = document.getElementById('regUsername')?.value.trim() || '';
+  const email = document.getElementById('regEmail')?.value.trim() || '';
+  const password = document.getElementById('regPassword')?.value || '';
+  const tosAccepted = document.getElementById('tosAccepted')?.checked || false;
+  
+  if (!username || !email || !password) {
+    showStatus('Please fill in all fields', 'error');
+    return;
+  }
+  
+  if (!tosAccepted) {
+    showStatus('Please accept the Terms of Service and Privacy Policy', 'error');
+    return;
+  }
+  
+  try {
+    showStatus('Creating account...', 'info');
+    
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, email, password, tosAccepted })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Registration failed');
+    }
+    
+    showStatus('Account created successfully! Please check your email to verify your account.', 'success');
+    
+    // Switch back to login form
+    setTimeout(() => {
+      showLoginForm();
+      // Clear registration form
+      if (document.getElementById('registerForm')) {
+        document.getElementById('registerForm').reset();
+      }
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Registration error:', error);
+    showStatus(error.message || 'Registration failed. Please try again.', 'error');
+  }
+}
+
 // Generate avatar for user
 function generateAvatar(username) {
   const colors = ['#5865f2', '#3ba55c', '#ed4245', '#faa61a', '#9b59b6', '#e67e22'];
@@ -334,6 +411,25 @@ function showChatInterface() {
 function showLoginInterface() {
   if (chatContainer) chatContainer.style.display = 'none';
   if (loginContainer) loginContainer.style.display = 'block';
+  showLoginForm();
+}
+
+// Show login form
+function showLoginForm() {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  
+  if (loginForm) loginForm.style.display = 'block';
+  if (registerForm) registerForm.style.display = 'none';
+}
+
+// Show registration form
+function showRegistrationForm() {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  
+  if (loginForm) loginForm.style.display = 'none';
+  if (registerForm) registerForm.style.display = 'block';
 }
 
 // Server switching
