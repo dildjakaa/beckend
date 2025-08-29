@@ -279,11 +279,31 @@ async function handleLogin(e) {
     
     // Debug logging
     console.log('Login response data:', data);
+    console.log('Data type:', typeof data);
+    console.log('Data keys:', Object.keys(data));
+    if (data.user) {
+      console.log('User data:', data.user);
+      console.log('User keys:', Object.keys(data.user));
+      console.log('User ID:', data.user.id);
+      console.log('User ID type:', typeof data.user.id);
+      console.log('Username:', data.user.username);
+      console.log('Username type:', typeof data.user.username);
+    }
     
     // Validate response structure
-    if (!data.user || !data.user.id || !data.user.username) {
-      console.error('Invalid response structure:', data);
-      throw new Error('Invalid response from server');
+    if (!data.user) {
+      console.error('No user data in response:', data);
+      throw new Error('No user data received from server');
+    }
+    
+    if (data.user.id === null || data.user.id === undefined || data.user.id === '') {
+      console.error('Invalid user ID in response:', data.user.id);
+      throw new Error('Invalid user ID received from server');
+    }
+    
+    if (!data.user.username || data.user.username === null || data.user.username === undefined || data.user.username === '') {
+      console.error('Invalid username in response:', data.user.username);
+      throw new Error('Invalid username received from server');
     }
     
     // Store user data and token
@@ -295,12 +315,17 @@ async function handleLogin(e) {
     };
     
     // Store token for socket authentication
+    console.log('Token received:', data.token);
     if (data.token) {
       localStorage.setItem('authToken', data.token);
+      console.log('Token saved to localStorage');
       
       // Authenticate with socket
       if (socket && isConnected) {
         socket.emit('authenticate_with_token', { token: data.token });
+        console.log('Socket authentication sent');
+      } else {
+        console.log('Socket not available or not connected');
       }
     } else {
       console.warn('No token received from server');
