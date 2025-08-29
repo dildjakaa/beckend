@@ -29,8 +29,21 @@ socket.on('connect', () => {
   
   // Auto-authenticate if we have a token
   const token = localStorage.getItem('authToken');
-  if (token && currentUser?.id) {
-    socket.emit('authenticate_with_token', { token: token });
+  const userData = localStorage.getItem('userData');
+  
+  if (token && userData) {
+    try {
+      const user = JSON.parse(userData);
+      if (user && user.id) {
+        currentUser = user;
+        console.log('Restored user session:', user);
+        socket.emit('authenticate_with_token', { token: token });
+      }
+    } catch (error) {
+      console.error('Failed to restore user session:', error);
+      localStorage.removeItem('userData');
+      localStorage.removeItem('authToken');
+    }
   }
 });
 
@@ -38,6 +51,7 @@ socket.on('disconnect', () => {
   console.log('Disconnected from server');
   showStatus('Disconnected from server', 'warning');
   isConnected = false;
+  isSocketAuthenticated = false;
 });
 
 socket.on('connect_error', (error) => {
@@ -48,6 +62,60 @@ socket.on('connect_error', (error) => {
 
 socket.on('server_error', ({ message }) => {
   showStatus(message || 'Server error occurred', 'error');
+});
+
+// Handle token authentication responses
+socket.on('token_auth_success', (data) => {
+  console.log('✅ Socket authentication successful:', data);
+  isSocketAuthenticated = true;
+  showStatus('Socket authenticated successfully', 'success');
+});
+
+socket.on('token_auth_error', (data) => {
+  console.error('❌ Socket authentication failed:', data);
+  isSocketAuthenticated = false;
+  showStatus('Socket authentication failed: ' + (data.error || 'Unknown error'), 'error');
+});
+
+// Handle room join responses
+socket.on('room_joined', (data) => {
+  console.log('✅ Joined room:', data);
+  if (data.success) {
+    showStatus(`Joined #${data.roomId}`, 'success');
+    
+    // Load messages if available
+    if (data.messages && Array.isArray(data.messages)) {
+      // Clear existing messages
+      if (messagesDiv) messagesDiv.innerHTML = '';
+      
+      // Load messages from server
+      data.messages.forEach(msg => {
+        addMessage({
+          id: msg.id,
+          username: msg.username,
+          avatar: generateAvatar(msg.username),
+          content: msg.content,
+          timestamp: new Date(msg.timestamp),
+          isOwn: msg.username === currentUser?.username
+        });
+      });
+    }
+  } else {
+    showStatus('Failed to join room', 'error');
+  }
+});
+
+// Handle new messages
+socket.on('new_message', (data) => {
+  console.log('📨 New message received:', data);
+  addMessage({
+    id: data.id || Date.now(),
+    username: data.username,
+    avatar: generateAvatar(data.username),
+    content: data.content,
+    timestamp: new Date(data.timestamp),
+    isOwn: data.username === currentUser?.username
+  });
 });
 
 // DOM Elements
@@ -107,6 +175,7 @@ const friendUsernameInput = document.getElementById('friendUsername');
 // Application state
 let currentUser = null;
 let isConnected = false;
+let isSocketAuthenticated = false;
 let currentServer = 'home';
 let currentChannel = 'general';
 let onlineUsers = new Map();
@@ -345,7 +414,7 @@ async function handleLogin(e) {
     
     // Authenticate with Socket.IO
     if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
-      socket.emit('authenticate_with_token', { token: data.token });
+      socket.emit('authenticate_with_token', { token: responseData.token });
     }
     
     // Update UI
@@ -353,11 +422,25 @@ async function handleLogin(e) {
     showChatInterface();
     showStatus(`Welcome back, ${username}!`, 'success');
     
-    // Join default channel
-    joinChannel('general');
-    
     // Store user data in localStorage for session restoration 
     localStorage.setItem('userData', JSON.stringify(currentUser));
+    
+    // Wait for socket authentication before joining channel
+    setTimeout(() => {
+      if (isSocketAuthenticated) {
+        joinChannel('general');
+      } else {
+        console.warn('Socket not authenticated yet, retrying in 1 second...');
+        setTimeout(() => {
+          if (isSocketAuthenticated) {
+            joinChannel('general');
+          } else {
+            console.error('Failed to authenticate socket after retry');
+            showStatus('Failed to authenticate socket', 'error');
+          }
+        }, 1000);
+      }
+    }, 500);
     
   } catch (error) {
     console.error('Login error:', error);
@@ -384,6 +467,7 @@ function handleLogout() {
   // Clear user data
   currentUser = null;
   onlineUsers.clear();
+  isSocketAuthenticated = false;
   
   // Clear token and user data (maybe stop?)
   localStorage.removeItem('authToken');
@@ -432,6 +516,12 @@ function joinChannel(channelId) {
     return;
   }
   
+  // Check if socket is authenticated
+  if (!isSocketAuthenticated) {
+    showStatus('Please wait for socket authentication', 'warning');
+    return;
+  }
+  
   if (channelId === currentChannel) return;
   
   // Update active channel
@@ -461,7 +551,7 @@ function joinChannel(channelId) {
   loadChannelMessages(channelId);
   
   // Emit join room event to server
-  if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
+  if (socket && socket.connected && isConnected && isSocketAuthenticated && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
     const roomId = channelId === 'general' ? 1 : channelId;
     socket.emit('join_room', { roomId: roomId, roomType: 'text' });
   }
@@ -619,11 +709,14 @@ function handleMessageSubmit(e) {
   });
   
   // Send message to server
-  if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
+  if (socket && socket.connected && isConnected && isSocketAuthenticated && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
     socket.emit('send_message', {
       content: message,
       roomId: currentChannel === 'general' ? 1 : currentChannel
     });
+  } else {
+    console.error('Cannot send message: socket not ready or user not authenticated');
+    showStatus('Cannot send message: not authenticated', 'error');
   }
   
   // Clear input
