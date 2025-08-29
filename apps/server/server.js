@@ -4,10 +4,18 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { query } = require('./utils/db.js');
+const { addCorsHeaders, handleCorsPreflight } = require('./utils/cors.js');
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
+
+// Global CORS middleware
+app.use((req, res, next) => {
+  if (handleCorsPreflight(req, res)) return;
+  addCorsHeaders(res);
+  next();
+});
 
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));

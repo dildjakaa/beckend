@@ -1,5 +1,11 @@
+// Determine server URL based on environment
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const SERVER_URL = isLocalhost ? 'http://localhost:3000' : 'https://krackenx.onrender.com';
+
+console.log('Using server:', SERVER_URL);
+
 // Socket.IO client connection with Firefox compatibility options
-const socket = io('https://krackenx.onrender.com', {  //DO NOT USE LOCALHOST
+const socket = io(SERVER_URL, {
   // Force WebSocket transport for consistency across browsers
   transports: ['websocket', 'polling'],
   // Increase timeout for Firefox
@@ -228,19 +234,63 @@ async function handleLogin(e) {
     showStatus('Logging in...', 'info');
     
     // Make real login request to server
-    const response = await fetch('https://krackenx.onrender.com/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password })
-    });
+    let response;
+    try {
+      response = await fetch(`${SERVER_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password })
+      });
+    } catch (networkError) {
+      console.error('Network error during login:', networkError);
+      throw new Error('Unable to connect to server. Please check your internet connection.');
+    }
     
-    const data = await response.json();
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+    
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse response as JSON:', parseError);
+      const responseText = await response.text();
+      console.error('Response text:', responseText);
+      throw new Error('Server returned invalid JSON response');
+    }
+    
+    console.log('Login response data:', data); // Debug logging
     
     if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
+      console.error('Server returned error status:', response.status);
+      console.error('Error response data:', data);
+      throw new Error(data.error || data.message || `Login failed with status ${response.status}`);
     }
+    
+    // Check if data and data.user exist
+    if (!data || !data.user) {
+      console.error('Invalid response structure:', data);
+      throw new Error('Invalid server response: missing user data');
+    }
+    
+    // Check if required fields exist
+    if (!data.token) {
+      console.error('Missing token in response:', data);
+      throw new Error('Invalid server response: missing authentication token');
+    }
+    
+    if (!data.user.id || !data.user.username) {
+      console.error('Missing required user fields:', data.user);
+      throw new Error('Invalid server response: missing required user information');
+    }
+    
+    console.log('Creating currentUser object with:', {
+      id: data.user.id,
+      username: data.user.username,
+      avatar: data.user.avatar_url || 'will generate'
+    });
     
     // Store token and user data
     localStorage.setItem('authToken', data.token);
@@ -250,6 +300,8 @@ async function handleLogin(e) {
       avatar: data.user.avatar_url || generateAvatar(data.user.username),
       status: 'online'
     };
+    
+    console.log('currentUser created successfully:', currentUser);
     
     // Verify that currentUser was set correctly
     if (!currentUser || !currentUser.username || !currentUser.avatar) {
@@ -274,7 +326,21 @@ async function handleLogin(e) {
     
   } catch (error) {
     console.error('Login error:', error);
-    showStatus(error.message || 'Login failed. Please try again.', 'error');
+    
+    // Provide more specific error messages
+    let errorMessage = 'Login failed. Please try again.';
+    
+    if (error.message.includes('Failed to fetch')) {
+      errorMessage = 'Unable to connect to server. Please check if the server is running.';
+    } else if (error.message.includes('Invalid server response')) {
+      errorMessage = 'Server returned invalid data. Please try again.';
+    } else if (error.message.includes('Network error')) {
+      errorMessage = 'Network error. Please check your internet connection.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    showStatus(errorMessage, 'error');
   }
 }
 
@@ -951,5 +1017,24 @@ socket.on('reconnecting', (attemptNumber) => {
 
 socket.on('reconnect_failed', () => {
   showStatus('Failed to reconnect to server', 'error');
+});
+
+// Test server connection function
+async function testServerConnection() {
+  try {
+    console.log('Testing connection to:', SERVER_URL);
+    const response = await fetch(`${SERVER_URL}/api/health`);
+    const data = await response.json();
+    console.log('Server health check response:', data);
+    return true;
+  } catch (error) {
+    console.error('Server connection test failed:', error);
+    return false;
+  }
+}
+
+// Test connection on page load
+document.addEventListener('DOMContentLoaded', () => {
+  testServerConnection();
 });
 
