@@ -26,6 +26,8 @@ const regUsernameInput = document.getElementById('regUsername');
 const regEmailInput = document.getElementById('regEmail');
 const regPasswordInput = document.getElementById('regPassword');
 const regPasswordConfirmInput = document.getElementById('regPasswordConfirm');
+const passwordStrengthBar = document.getElementById('passwordStrengthBar');
+const passwordStrengthLabel = document.getElementById('passwordStrengthLabel');
 
 // Verification form elements
 const verificationEmailSpan = document.getElementById('verificationEmail');
@@ -567,6 +569,27 @@ if (loginForm) {
 
 // Register form handler
 if (registerForm) {
+  // Password visibility toggles
+  registerForm.querySelectorAll('.toggle-visibility').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      const isPassword = input.getAttribute('type') === 'password';
+      input.setAttribute('type', isPassword ? 'text' : 'password');
+      btn.textContent = isPassword ? '🙈' : '👁️';
+    });
+  });
+
+  // Strength evaluation during typing
+  if (regPasswordInput) {
+    regPasswordInput.addEventListener('input', () => {
+      const value = regPasswordInput.value || '';
+      const { score, label } = evaluatePasswordStrength(value);
+      updateStrengthUI(score, label);
+    });
+  }
+
   registerForm.addEventListener('submit', (e) => {
     e.preventDefault();
     
@@ -589,6 +612,13 @@ if (registerForm) {
     
     if (password.length < 6) {
       showStatus('Пароль должен содержать минимум 6 символов', 'error');
+      return;
+    }
+
+    // Block weak passwords: require at least Normal
+    const strength = evaluatePasswordStrength(password);
+    if (strength.score < 2) {
+      showStatus('Пароль слишком слабый. Требуется уровень не ниже: Normal', 'error');
       return;
     }
     
@@ -645,6 +675,43 @@ if (registerForm) {
     }
   });
   });
+}
+
+// Password strength helpers
+function evaluatePasswordStrength(password) {
+  let score = 0;
+  if (!password) return { score, label: '—' };
+
+  // Length checks
+  if (password.length >= 6) score++;
+  if (password.length >= 10) score++;
+
+  // Character variety
+  const hasLower = /[a-zа-я]/.test(password);
+  const hasUpper = /[A-ZА-Я]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSymbol = /[^\w\s]/.test(password);
+  const variety = [hasLower, hasUpper, hasDigit, hasSymbol].filter(Boolean).length;
+  if (variety >= 2) score++;
+  if (variety >= 3) score++;
+
+  // Penalize common/obvious patterns
+  const common = /(password|qwerty|111111|123456|654321|letmein|admin)/i.test(password);
+  if (common) score = Math.max(0, score - 2);
+
+  // Cap score 0..4
+  score = Math.max(0, Math.min(4, score));
+
+  const label = score <= 1 ? 'Weak' : score === 2 ? 'Normal' : score === 3 ? 'Strong' : 'Very strong';
+  return { score, label };
+}
+
+function updateStrengthUI(score, label) {
+  if (!passwordStrengthBar || !passwordStrengthLabel) return;
+  const widths = ['0%', '25%', '50%', '75%', '100%'];
+  passwordStrengthBar.style.width = widths[score];
+  passwordStrengthBar.setAttribute('data-score', String(score));
+  passwordStrengthLabel.textContent = `Сила пароля: ${label}`;
 }
 
 // Email verification form handler

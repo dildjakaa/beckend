@@ -67,13 +67,23 @@
                         </div>
                         <div class="form-group">
                             <label for="regPassword">Пароль:</label>
-                            <input type="password" id="regPassword" name="password" required minlength="6" 
-                                   placeholder="Введите пароль (минимум 6 символов)">
+                            <div class="password-field">
+                                <input type="password" id="regPassword" name="password" required minlength="6" 
+                                       placeholder="Введите пароль (минимум 6 символов)">
+                                <button type="button" class="toggle-visibility" data-target="regPassword" aria-label="Показать/скрыть пароль">👁️</button>
+                            </div>
+                            <div class="password-strength" id="passwordStrength" aria-live="polite">
+                                <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                                <div class="password-strength-label" id="passwordStrengthLabel">Сила пароля: —</div>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="regPasswordConfirm">Подтвердите пароль:</label>
-                            <input type="password" id="regPasswordConfirm" name="passwordConfirm" required 
-                                   placeholder="Повторите пароль">
+                            <div class="password-field">
+                                <input type="password" id="regPasswordConfirm" name="passwordConfirm" required 
+                                       placeholder="Повторите пароль">
+                                <button type="button" class="toggle-visibility" data-target="regPasswordConfirm" aria-label="Показать/скрыть пароль">👁️</button>
+                            </div>
                         </div>
                         <div class="form-group" style="display:flex; gap:8px; align-items:flex-start;">
                             <input type="checkbox" id="regTos" name="tosAccepted" required>
