@@ -184,36 +184,6 @@ body {
   font-size: 0.875rem;
 }
 
-/* Verification form specific styles */
-.verification-header {
-  text-align: center;
-  margin-bottom: var(--spacing-lg);
-}
-
-.verification-header h3 {
-  color: var(--text-primary);
-  font-size: 1.25rem;
-  margin-bottom: var(--spacing-sm);
-}
-
-.verification-header p {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-#verificationCode {
-  font-family: monospace;
-  font-size: 1.25rem;
-  text-align: center;
-  letter-spacing: 0.1em;
-}
-
-#verificationEmail {
-  background: var(--discord-secondary);
-  color: var(--text-tertiary);
-  cursor: not-allowed;
-}
-
 /* Main Chat Container */
 .chat-container {
   display: flex;
@@ -421,15 +391,7 @@ body {
   text-align: center;
 }
 
-.voice-channel {
-  color: var(--text-tertiary);
-}
 
-.voice-count {
-  margin-left: auto;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
 
 /* User Panel */
 .user-panel {
@@ -635,6 +597,40 @@ body {
   word-wrap: break-word;
 }
 
+/* Own message styling */
+.message.own {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.message.own .message-content {
+  align-items: flex-end;
+}
+
+.message.own .message-header {
+  justify-content: flex-end;
+}
+
+.message.own .message-text {
+  background: var(--discord-primary);
+  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-sm);
+  max-width: 70%;
+  margin-left: auto;
+}
+
+/* Other user message styling */
+.message.other .message-text {
+  background: var(--discord-secondary);
+  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border-top-left-radius: var(--radius-sm);
+  max-width: 70%;
+}
+
 /* Message Input */
 .message-input-container {
   padding: var(--spacing-lg);
@@ -695,10 +691,7 @@ body {
   color: var(--text-tertiary);
 }
 
-.input-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-}
+
 
 /* Members Sidebar */
 .members-sidebar {
@@ -1027,56 +1020,4 @@ body {
     padding: var(--spacing-lg);
     margin: var(--spacing-md);
   }
-}
-
-/* Form footer and switching */
-.form-footer {
-  margin-top: var(--spacing-lg);
-  text-align: center;
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--border-primary);
-}
-
-.form-footer p {
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.form-footer a {
-  color: var(--discord-accent);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.form-footer a:hover {
-  color: var(--discord-accent-hover);
-  text-decoration: underline;
-}
-
-/* Checkbox styling */
-.checkbox-label {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-sm);
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-.checkbox-label input[type="checkbox"] {
-  margin: 0;
-  width: 16px;
-  height: 16px;
-  accent-color: var(--discord-accent);
-}
-
-.checkbox-label a {
-  color: var(--discord-accent);
-  text-decoration: none;
-}
-
-.checkbox-label a:hover {
-  text-decoration: underline;
 }

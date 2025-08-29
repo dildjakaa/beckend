@@ -20,12 +20,6 @@ socket.on('connect', () => {
   console.log('Connected to server');
   showStatus('Connected to server', 'success');
   isConnected = true;
-  
-  // Auto-authenticate if user has token
-  const authToken = localStorage.getItem('authToken');
-  if (authToken && currentUser) {
-    socket.emit('authenticate_with_token', { token: authToken });
-  }
 });
 
 socket.on('disconnect', () => {
@@ -106,19 +100,12 @@ let onlineUsers = new Map();
 let friends = [];
 let friendRequests = [];
 let servers = [
-  { id: 'home', name: 'Kracken Home', icon: 'fas fa-home' },
-  { id: 'general', name: 'General', icon: 'fas fa-hashtag' },
-  { id: 'gaming', name: 'Gaming', icon: 'fas fa-gamepad' },
-  { id: 'music', name: 'Music', icon: 'fas fa-music' }
+  { id: 'home', name: 'KrackenX Home', icon: 'fas fa-home' }
 ];
 
 let channels = {
   home: [
-    { id: 'general', name: 'general', type: 'text', topic: 'General discussion and announcements' },
-    { id: 'random', name: 'random', type: 'text', topic: 'Random conversations' },
-    { id: 'help', name: 'help', type: 'text', topic: 'Get help and support' },
-    { id: 'general-voice', name: 'General', type: 'voice', topic: 'Voice chat for general discussion' },
-    { id: 'gaming-voice', name: 'Gaming', type: 'voice', topic: 'Voice chat for gaming' }
+    { id: 'general', name: 'general', type: 'text', topic: 'General discussion and announcements' }
   ]
 };
 
@@ -135,64 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // Event Listeners
 function initializeEventListeners() {
   // Login form
-  if (loginForm) {
-    loginForm.addEventListener('submit', handleLogin);
-  } else {
-    console.error('Login form not found');
-  }
-  
-  // Registration form
-  const registerForm = document.getElementById('registerForm');
-  if (registerForm) {
-    registerForm.addEventListener('submit', handleRegister);
-  }
-  
-  // Form switching
-const showRegisterBtn = document.getElementById('showRegisterBtn');
-const showLoginBtn = document.getElementById('showLoginBtn');
-
-if (showRegisterBtn) {
-  showRegisterBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    showRegistrationForm();
-  });
-}
-
-if (showLoginBtn) {
-  showLoginBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    showLoginForm();
-  });
-}
-
-// Verification form event listeners
-const verificationForm = document.getElementById('verificationForm');
-if (verificationForm) {
-  verificationForm.addEventListener('submit', handleVerification);
-}
-
-const resendCodeBtn = document.getElementById('resendCodeBtn');
-if (resendCodeBtn) {
-  resendCodeBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    handleResendCode();
-  });
-}
-
-const backToRegisterBtn = document.getElementById('backToRegisterBtn');
-if (backToRegisterBtn) {
-  backToRegisterBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    showRegistrationForm();
-  });
-}
+  loginForm.addEventListener('submit', handleLogin);
   
   // Message form
-  if (messageForm) {
-    messageForm.addEventListener('submit', handleMessageSubmit);
-  } else {
-    console.error('Message form not found');
-  }
+  messageForm.addEventListener('submit', handleMessageSubmit);
   
   // Server switching
   document.querySelectorAll('.server-item').forEach(item => {
@@ -244,15 +177,8 @@ if (backToRegisterBtn) {
 async function handleLogin(e) {
   e.preventDefault();
   
-  // Check if input elements exist
-  if (!usernameInput || !passwordInput) {
-    console.error('Login input elements not found:', { usernameInput, passwordInput });
-    showStatus('Login form elements not found', 'error');
-    return;
-  }
-  
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value.trim();
+  const username = usernameInput ? usernameInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value.trim() : '';
   
   if (!username || !password) {
     showStatus('Please enter both username and password', 'error');
@@ -262,87 +188,12 @@ async function handleLogin(e) {
   try {
     showStatus('Logging in...', 'info');
     
-    // Real authentication with server
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
-    }
-    
-    // Debug logging
-    console.log('Login response data:', data);
-    console.log('Data type:', typeof data);
-    console.log('Data keys:', Object.keys(data));
-    
-    // Extract user data from the correct structure
-    let userData, tokenData;
-    
-    if (data.data && data.data.user) {
-      // New structure: {success: true, data: {user: {...}, token: "..."}}
-      userData = data.data.user;
-      tokenData = data.data.token;
-      console.log('Using data.data structure');
-    } else if (data.user) {
-      // Old structure: {user: {...}, token: "..."}
-      userData = data.user;
-      tokenData = data.token;
-      console.log('Using direct data structure');
-    } else {
-      console.error('Unexpected response structure:', data);
-      throw new Error('Unexpected response structure from server');
-    }
-    
-    console.log('Extracted user data:', userData);
-    console.log('Extracted token:', tokenData);
-    
-    // Validate user data structure
-    if (!userData) {
-      console.error('No user data found in response');
-      throw new Error('No user data received from server');
-    }
-    
-    if (userData.id === null || userData.id === undefined || userData.id === '') {
-      console.error('Invalid user ID in response:', userData.id);
-      throw new Error('Invalid user ID received from server');
-    }
-    
-    if (!userData.username || userData.username === null || userData.username === undefined || userData.username === '') {
-      console.error('Invalid username in response:', userData.username);
-      throw new Error('Invalid username received from server');
-    }
-    
-    // Store user data
+    // Simulate login (replace with actual authentication)
     currentUser = {
-      id: userData.id,
-      username: userData.username,
-      avatar: userData.avatar_url || generateAvatar(userData.username),
+      username: username,
+      avatar: generateAvatar(username),
       status: 'online'
     };
-    
-    // Store token for socket authentication
-    console.log('Token received:', tokenData);
-    if (tokenData) {
-      localStorage.setItem('authToken', tokenData);
-      console.log('Token saved to localStorage');
-      
-      // Authenticate with socket
-      if (socket && isConnected) {
-        socket.emit('authenticate_with_token', { token: tokenData });
-        console.log('Socket authentication sent');
-      } else {
-        console.log('Socket not available or not connected');
-      }
-    } else {
-      console.warn('No token received from server');
-    }
     
     // Update UI
     updateUserInterface();
@@ -354,147 +205,7 @@ async function handleLogin(e) {
     
   } catch (error) {
     console.error('Login error:', error);
-    showStatus(error.message || 'Login failed. Please try again.', 'error');
-  }
-}
-
-// Registration handling
-async function handleRegister(e) {
-  e.preventDefault();
-  
-  const username = document.getElementById('regUsername')?.value.trim() || '';
-  const email = document.getElementById('regEmail')?.value.trim() || '';
-  const password = document.getElementById('regPassword')?.value || '';
-  const tosAccepted = document.getElementById('tosAccepted')?.checked || false;
-  
-  if (!username || !email || !password) {
-    showStatus('Please fill in all fields', 'error');
-    return;
-  }
-  
-  if (!tosAccepted) {
-    showStatus('Please accept the Terms of Service and Privacy Policy', 'error');
-    return;
-  }
-  
-  try {
-    showStatus('Creating account...', 'info');
-    
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, email, password, tosAccepted })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Registration failed');
-    }
-    
-    showStatus('Account created successfully! Code sent to your email.', 'success');
-    
-    // Store email for verification
-    window.verificationEmail = email;
-    
-    // Show verification form
-    setTimeout(() => {
-      showVerificationForm();
-    }, 1000);
-    
-  } catch (error) {
-    console.error('Registration error:', error);
-    showStatus(error.message || 'Registration failed. Please try again.', 'error');
-  }
-}
-
-// Email verification handling
-async function handleVerification(e) {
-  e.preventDefault();
-  
-  const code = document.getElementById('verificationCode')?.value.trim() || '';
-  const email = window.verificationEmail;
-  
-  if (!code || !email) {
-    showStatus('Please enter the verification code', 'error');
-    return;
-  }
-  
-  if (code.length !== 6 || !/^\d{6}$/.test(code)) {
-    showStatus('Please enter a valid 6-digit code', 'error');
-    return;
-  }
-  
-  try {
-    showStatus('Verifying email...', 'info');
-    
-    const response = await fetch('/api/auth/verify-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code, email })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Verification failed');
-    }
-    
-    showStatus('Email verified successfully! You can now log in.', 'success');
-    
-    // Clear verification form
-    if (document.getElementById('verificationForm')) {
-      document.getElementById('verificationForm').reset();
-    }
-    
-    // Switch to login form
-    setTimeout(() => {
-      showLoginForm();
-      // Clear stored email
-      delete window.verificationEmail;
-    }, 2000);
-    
-  } catch (error) {
-    console.error('Verification error:', error);
-    showStatus(error.message || 'Verification failed. Please try again.', 'error');
-  }
-}
-
-// Resend verification code
-async function handleResendCode() {
-  const email = window.verificationEmail;
-  
-  if (!email) {
-    showStatus('No email found. Please register again.', 'error');
-    return;
-  }
-  
-  try {
-    showStatus('Resending code...', 'info');
-    
-    const response = await fetch('/api/auth/resend-code', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to resend code');
-    }
-    
-    showStatus('New verification code sent to your email!', 'success');
-    
-  } catch (error) {
-    console.error('Resend code error:', error);
-    showStatus(error.message || 'Failed to resend code. Please try again.', 'error');
+    showStatus('Login failed. Please try again.', 'error');
   }
 }
 
@@ -546,8 +257,7 @@ function joinChannel(channelId) {
   
   // Emit join room event to server
   if (socket && isConnected) {
-    const roomId = channelId === 'general' ? 1 : channelId;
-    socket.emit('join_room', { roomId: roomId, roomType: 'text' });
+    socket.emit('join_room', { roomId: channelId, roomType: 'text' });
   }
 }
 
@@ -580,53 +290,6 @@ function updateUserInterface() {
 function showChatInterface() {
   if (loginContainer) loginContainer.style.display = 'none';
   if (chatContainer) chatContainer.style.display = 'flex';
-}
-
-// Show login interface
-function showLoginInterface() {
-  if (chatContainer) chatContainer.style.display = 'none';
-  if (loginContainer) loginContainer.style.display = 'block';
-  showLoginForm();
-}
-
-// Show login form
-function showLoginForm() {
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const verificationForm = document.getElementById('verificationForm');
-  
-  if (loginForm) loginForm.style.display = 'block';
-  if (registerForm) registerForm.style.display = 'none';
-  if (verificationForm) verificationForm.style.display = 'none';
-}
-
-// Show registration form
-function showRegistrationForm() {
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const verificationForm = document.getElementById('verificationForm');
-  
-  if (loginForm) loginForm.style.display = 'none';
-  if (registerForm) registerForm.style.display = 'block';
-  if (verificationForm) verificationForm.style.display = 'none';
-}
-
-// Show verification form
-function showVerificationForm() {
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const verificationForm = document.getElementById('verificationForm');
-  
-  if (loginForm) loginForm.style.display = 'none';
-  if (registerForm) registerForm.style.display = 'none';
-  if (verificationForm) {
-    verificationForm.style.display = 'block';
-    // Set the email field
-    const emailField = document.getElementById('verificationEmail');
-    if (emailField && window.verificationEmail) {
-      emailField.value = window.verificationEmail;
-    }
-  }
 }
 
 // Server switching
@@ -685,18 +348,7 @@ function updateChannelList() {
     `).join('');
   }
   
-  // Update voice channels
-  const voiceChannels = serverChannels.filter(c => c.type === 'voice');
-  const voiceChannelsList = document.querySelector('.channel-category:nth-child(2) .channel-list');
-  if (voiceChannelsList) {
-    voiceChannelsList.innerHTML = voiceChannels.map(channel => `
-      <div class="channel-item voice-channel" data-channel-id="${channel.id}">
-        <i class="fas fa-volume-up"></i>
-        <span>${channel.name}</span>
-        <span class="voice-count">0</span>
-      </div>
-    `).join('');
-  }
+
   
   // Re-attach event listeners
   document.querySelectorAll('.channel-item').forEach(item => {
@@ -708,7 +360,7 @@ function updateChannelList() {
 function handleMessageSubmit(e) {
   e.preventDefault();
   
-  const message = messageInput ? messageInput.value.trim() : '';
+  const message = messageInput.value.trim();
   if (!message) return;
   
   // Add message to UI
@@ -724,8 +376,8 @@ function handleMessageSubmit(e) {
   // Send message to server
   if (socket && isConnected) {
     socket.emit('send_message', {
-      roomId: currentChannel === 'general' ? 1 : currentChannel,
-      content: message
+      content: message,
+      roomId: currentChannel === 'general' ? 1 : currentChannel
     });
   }
   
@@ -736,7 +388,9 @@ function handleMessageSubmit(e) {
 // Add message to UI
 function addMessage(messageData) {
   const messageElement = document.createElement('div');
-  messageElement.className = 'message';
+  const isOwnMessage = messageData.isOwn || messageData.username === currentUser?.username;
+  
+  messageElement.className = `message ${isOwnMessage ? 'own' : 'other'}`;
   
   const timestamp = messageData.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
@@ -778,7 +432,7 @@ function loadChannelMessages(channelId) {
 // Update online count
 function updateOnlineCount() {
   if (onlineCount) {
-    const count = onlineUsers.size + 1; // +1 for current user (maybe stop?)
+    const count = onlineUsers.size + 1; // +1 for current user
     onlineCount.textContent = count;
   }
 }
@@ -1054,72 +708,15 @@ socket.on('user_left', (data) => {
   });
 });
 
-socket.on('message', (data) => {
-  if (data.username !== currentUser?.username) {
-    addMessage({
-      id: Date.now(),
-      username: data.username,
-      avatar: generateAvatar(data.username),
-      content: data.message,
-      timestamp: new Date(),
-      isOwn: false
-    });
-  }
-});
-
-// Handle new messages from server
 socket.on('new_message', (data) => {
-  if (data.userId !== currentUser?.id) {
-    addMessage({
-      id: data.id,
-      username: data.username,
-      avatar: generateAvatar(data.username),
-      content: data.content,
-      timestamp: new Date(data.timestamp),
-      isOwn: false
-    });
-  }
-});
-
-// Handle successful authentication
-socket.on('token_auth_success', (data) => {
-  console.log('Successfully authenticated with server');
-  showStatus('Successfully connected to chat', 'success');
-  
-  // Update user data if needed
-  if (data.user && data.user.id) {
-    currentUser.id = data.user.id;
-  }
-});
-
-// Handle authentication errors
-socket.on('token_auth_error', (data) => {
-  console.error('Authentication error:', data.error);
-  showStatus('Authentication failed. Please login again.', 'error');
-  localStorage.removeItem('authToken');
-  currentUser = null;
-  showLoginInterface();
-});
-
-// Handle room joined event
-socket.on('room_joined', (data) => {
-  console.log('Joined room:', data);
-  if (data.success && data.messages) {
-    // Clear existing messages
-    if (messagesDiv) messagesDiv.innerHTML = '';
-    
-    // Load messages from server
-    data.messages.forEach(msg => {
-      addMessage({
-        id: msg.id,
-        username: msg.username,
-        avatar: generateAvatar(msg.username),
-        content: msg.content,
-        timestamp: new Date(msg.timestamp),
-        isOwn: msg.user_id === currentUser?.id
-      });
-    });
-  }
+  addMessage({
+    id: data.id || Date.now(),
+    username: data.username,
+    avatar: generateAvatar(data.username),
+    content: data.content,
+    timestamp: new Date(data.timestamp),
+    isOwn: data.username === currentUser?.username
+  });
 });
 
 // Handle connection errors

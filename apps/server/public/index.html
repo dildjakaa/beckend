@@ -35,67 +35,6 @@
                         <i class="fas fa-sign-in-alt"></i>
                         Sign In
                     </button>
-                    <div class="form-footer">
-                        <p>Don't have an account? <a href="#" id="showRegisterBtn">Sign up</a></p>
-                    </div>
-                </form>
-
-                <!-- Registration Form (hidden initially) -->
-                <form id="registerForm" class="login-form" style="display: none;">
-                    <div class="form-group">
-                        <label for="regUsername">Username</label>
-                        <input type="text" id="regUsername" name="username" required minlength="3" maxlength="50" 
-                               placeholder="Enter your username">
-                    </div>
-                    <div class="form-group">
-                        <label for="regEmail">Email</label>
-                        <input type="email" id="regEmail" name="email" required 
-                               placeholder="Enter your email">
-                    </div>
-                    <div class="form-group">
-                        <label for="regPassword">Password</label>
-                        <input type="password" id="regPassword" name="password" required minlength="6" 
-                               placeholder="Enter your password">
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="tosAccepted" name="tosAccepted" required>
-                            <span class="checkmark"></span>
-                            I accept the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a>
-                        </label>
-                    </div>
-                    <button type="submit" class="login-btn">
-                        <i class="fas fa-user-plus"></i>
-                        Create Account
-                    </button>
-                    <div class="form-footer">
-                        <p>Already have an account? <a href="#" id="showLoginBtn">Sign in</a></p>
-                    </div>
-                </form>
-
-                <!-- Email Verification Form (hidden initially) -->
-                <form id="verificationForm" class="login-form" style="display: none;">
-                    <div class="verification-header">
-                        <h3>Подтверждение Email</h3>
-                        <p>Мы отправили код подтверждения на ваш email</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="verificationCode">Код подтверждения</label>
-                        <input type="text" id="verificationCode" name="code" required maxlength="6" 
-                               placeholder="Введите 6-значный код" pattern="[0-9]{6}">
-                    </div>
-                    <div class="form-group">
-                        <label for="verificationEmail">Email</label>
-                        <input type="email" id="verificationEmail" name="email" required readonly>
-                    </div>
-                    <button type="submit" class="login-btn">
-                        <i class="fas fa-check"></i>
-                        Подтвердить Email
-                    </button>
-                    <div class="form-footer">
-                        <p>Не получили код? <a href="#" id="resendCodeBtn">Отправить заново</a></p>
-                        <p><a href="#" id="backToRegisterBtn">Вернуться к регистрации</a></p>
-                    </div>
                 </form>
             </div>
         </div>
@@ -113,26 +52,9 @@
                 
                 <div class="server-separator"></div>
                 
-                <div class="server-item" data-server-id="general">
-                    <div class="server-icon">
-                        <i class="fas fa-hashtag"></i>
-                    </div>
-                    <div class="server-tooltip">General</div>
-                </div>
+
                 
-                <div class="server-item" data-server-id="gaming">
-                    <div class="server-icon">
-                        <i class="fas fa-gamepad"></i>
-                    </div>
-                    <div class="server-tooltip">Gaming</div>
-                </div>
-                
-                <div class="server-item" data-server-id="music">
-                    <div class="server-icon">
-                        <i class="fas fa-music"></i>
-                    </div>
-                    <div class="server-tooltip">Music</div>
-                </div>
+
                 
                 <div class="server-separator"></div>
                 
@@ -168,36 +90,11 @@
                                 <i class="fas fa-hashtag"></i>
                                 <span>general</span>
                             </div>
-                            <div class="channel-item" data-channel-id="random">
-                                <i class="fas fa-hashtag"></i>
-                                <span>random</span>
-                            </div>
-                            <div class="channel-item" data-channel-id="help">
-                                <i class="fas fa-hashtag"></i>
-                                <span>help</span>
-                            </div>
+
                         </div>
                     </div>
 
-                    <!-- Voice Channels -->
-                    <div class="channel-category">
-                        <div class="category-header">
-                            <i class="fas fa-chevron-down"></i>
-                            <span>VOICE CHANNELS</span>
-                        </div>
-                        <div class="channel-list">
-                            <div class="channel-item voice-channel" data-channel-id="general-voice">
-                                <i class="fas fa-volume-up"></i>
-                                <span>General</span>
-                                <span class="voice-count">0</span>
-                            </div>
-                            <div class="channel-item voice-channel" data-channel-id="gaming-voice">
-                                <i class="fas fa-volume-up"></i>
-                                <span>Gaming</span>
-                                <span class="voice-count">0</span>
-                            </div>
-                        </div>
-                    </div>
+
 
                     <!-- Direct Messages -->
                     <div class="channel-category">
@@ -273,20 +170,9 @@
                 <div class="message-input-container">
                     <form id="messageForm" class="message-form">
                         <div class="input-wrapper">
-                            <button type="button" class="input-btn" id="attachBtn" title="Attach file">
-                                <i class="fas fa-plus-circle"></i>
-                            </button>
                             <div class="message-input-wrapper">
                                 <input type="text" id="messageInput" placeholder="Message #general" 
                                        maxlength="2000" autocomplete="off">
-                            </div>
-                            <div class="input-actions">
-                                <button type="button" class="input-btn" id="emojiBtn" title="Emoji">
-                                    <i class="fas fa-smile"></i>
-                                </button>
-                                <button type="button" class="input-btn" id="gifBtn" title="GIF">
-                                    <i class="fas fa-gift"></i>
-                                </button>
                             </div>
                         </div>
                     </form>
