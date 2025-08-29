@@ -144,22 +144,44 @@ function initializeEventListeners() {
   }
   
   // Form switching
-  const showRegisterBtn = document.getElementById('showRegisterBtn');
-  const showLoginBtn = document.getElementById('showLoginBtn');
-  
-  if (showRegisterBtn) {
-    showRegisterBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      showRegistrationForm();
-    });
-  }
-  
-  if (showLoginBtn) {
-    showLoginBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      showLoginForm();
-    });
-  }
+const showRegisterBtn = document.getElementById('showRegisterBtn');
+const showLoginBtn = document.getElementById('showLoginBtn');
+
+if (showRegisterBtn) {
+  showRegisterBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    showRegistrationForm();
+  });
+}
+
+if (showLoginBtn) {
+  showLoginBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    showLoginForm();
+  });
+}
+
+// Verification form event listeners
+const verificationForm = document.getElementById('verificationForm');
+if (verificationForm) {
+  verificationForm.addEventListener('submit', handleVerification);
+}
+
+const resendCodeBtn = document.getElementById('resendCodeBtn');
+if (resendCodeBtn) {
+  resendCodeBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    handleResendCode();
+  });
+}
+
+const backToRegisterBtn = document.getElementById('backToRegisterBtn');
+if (backToRegisterBtn) {
+  backToRegisterBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    showRegistrationForm();
+  });
+}
   
   // Message form
   messageForm.addEventListener('submit', handleMessageSubmit);
@@ -306,20 +328,107 @@ async function handleRegister(e) {
       throw new Error(data.error || 'Registration failed');
     }
     
-    showStatus('Account created successfully! Please check your email to verify your account.', 'success');
+    showStatus('Account created successfully! Code sent to your email.', 'success');
     
-    // Switch back to login form
+    // Store email for verification
+    window.verificationEmail = email;
+    
+    // Show verification form
     setTimeout(() => {
-      showLoginForm();
-      // Clear registration form
-      if (document.getElementById('registerForm')) {
-        document.getElementById('registerForm').reset();
-      }
-    }, 2000);
+      showVerificationForm();
+    }, 1000);
     
   } catch (error) {
     console.error('Registration error:', error);
     showStatus(error.message || 'Registration failed. Please try again.', 'error');
+  }
+}
+
+// Email verification handling
+async function handleVerification(e) {
+  e.preventDefault();
+  
+  const code = document.getElementById('verificationCode')?.value.trim() || '';
+  const email = window.verificationEmail;
+  
+  if (!code || !email) {
+    showStatus('Please enter the verification code', 'error');
+    return;
+  }
+  
+  if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+    showStatus('Please enter a valid 6-digit code', 'error');
+    return;
+  }
+  
+  try {
+    showStatus('Verifying email...', 'info');
+    
+    const response = await fetch('/api/auth/verify-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code, email })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Verification failed');
+    }
+    
+    showStatus('Email verified successfully! You can now log in.', 'success');
+    
+    // Clear verification form
+    if (document.getElementById('verificationForm')) {
+      document.getElementById('verificationForm').reset();
+    }
+    
+    // Switch to login form
+    setTimeout(() => {
+      showLoginForm();
+      // Clear stored email
+      delete window.verificationEmail;
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Verification error:', error);
+    showStatus(error.message || 'Verification failed. Please try again.', 'error');
+  }
+}
+
+// Resend verification code
+async function handleResendCode() {
+  const email = window.verificationEmail;
+  
+  if (!email) {
+    showStatus('No email found. Please register again.', 'error');
+    return;
+  }
+  
+  try {
+    showStatus('Resending code...', 'info');
+    
+    const response = await fetch('/api/auth/resend-code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to resend code');
+    }
+    
+    showStatus('New verification code sent to your email!', 'success');
+    
+  } catch (error) {
+    console.error('Resend code error:', error);
+    showStatus(error.message || 'Failed to resend code. Please try again.', 'error');
   }
 }
 
@@ -418,18 +527,40 @@ function showLoginInterface() {
 function showLoginForm() {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
+  const verificationForm = document.getElementById('verificationForm');
   
   if (loginForm) loginForm.style.display = 'block';
   if (registerForm) registerForm.style.display = 'none';
+  if (verificationForm) verificationForm.style.display = 'none';
 }
 
 // Show registration form
 function showRegistrationForm() {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
+  const verificationForm = document.getElementById('verificationForm');
   
   if (loginForm) loginForm.style.display = 'none';
   if (registerForm) registerForm.style.display = 'block';
+  if (verificationForm) verificationForm.style.display = 'none';
+}
+
+// Show verification form
+function showVerificationForm() {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const verificationForm = document.getElementById('verificationForm');
+  
+  if (loginForm) loginForm.style.display = 'none';
+  if (registerForm) registerForm.style.display = 'none';
+  if (verificationForm) {
+    verificationForm.style.display = 'block';
+    // Set the email field
+    const emailField = document.getElementById('verificationEmail');
+    if (emailField && window.verificationEmail) {
+      emailField.value = window.verificationEmail;
+    }
+  }
 }
 
 // Server switching
