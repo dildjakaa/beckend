@@ -54,7 +54,7 @@ const newChatBtn = document.getElementById('newChatBtn');
 const chatList = document.querySelector('.chat-list');
 
 // Invitation modal elements
-const ENABLE_PRIVATE = false;
+const ENABLE_PRIVATE = true;
 const invitationModal = document.getElementById('invitationModal');
 const invitationAvatar = document.getElementById('invitationAvatar');
 const invitationTitle = document.getElementById('invitationTitle');
@@ -319,33 +319,57 @@ function updateOnlineUsers(users) {
       <div class="user-status"></div>
     `;
     
-    // Private chat disabled
-    if (ENABLE_PRIVATE && user.id !== currentUser?.id) {
+    // Click to send invitation
+    if (ENABLE_PRIVATE && currentUser && user.id !== currentUser.id) {
       userItem.style.cursor = 'pointer';
-      userItem.addEventListener('click', () => startPrivateChat(user));
+      userItem.addEventListener('click', () => {
+        try {
+          socket.emit('invite-user', { targetUsername: user.username });
+          showStatus(`Приглашение отправлено: ${user.username}`, 'info');
+          // Keep a lightweight hint of last invite target for labeling later
+          lastInviteTarget = user.username;
+        } catch (_) {
+          showStatus('Не удалось отправить приглашение', 'error');
+        }
+      });
     }
     
     onlineUsersList.appendChild(userItem);
   });
 }
 
-function startPrivateChat(user) {
-  showStatus('Приватные чаты отключены. Сообщения отправляются в общий чат.', 'info');
-  switchChat({ id: 1, name: 'General Chat', type: 'general' });
-}
+// Deprecated: replaced by invite flow
+function startPrivateChat(user) {}
 
 function switchChat(room) {
-  // Force single general room
-  document.querySelectorAll('.chat-item').forEach(item => {
-    item.classList.remove('active');
-  });
-  const generalItem = document.querySelector('[data-room-id="1"]');
-  if (generalItem) generalItem.classList.add('active');
-  currentRoom = { id: 1, name: 'General Chat', type: 'general' };
-  currentChatName.textContent = 'General Chat';
-  currentChatStatus.textContent = 'Public room';
+  if (!room || !room.id) return;
+  document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
+  let chatItem = document.querySelector(`[data-room-id="${room.id}"]`);
+  if (!chatItem) {
+    // Create chat item dynamically
+    const item = document.createElement('div');
+    item.className = 'chat-item';
+    item.setAttribute('data-room-id', String(room.id));
+    item.setAttribute('data-room-type', room.type || 'private');
+    item.innerHTML = `
+      <div class="chat-avatar"><div class="avatar-placeholder">#</div></div>
+      <div class="chat-info">
+        <div class="chat-name">${escapeHtml(room.name || 'Private chat')}</div>
+        <div class="chat-last-message"></div>
+      </div>
+      <div class="chat-meta"><div class="unread-count" style="display: none;">0</div></div>
+    `;
+    item.addEventListener('click', () => switchChat(room));
+    const list = document.querySelector('.chat-list');
+    if (list) list.appendChild(item);
+    chatItem = item;
+  }
+  if (chatItem) chatItem.classList.add('active');
+  currentRoom = { id: room.id, name: room.name || 'Private chat', type: room.type || 'private' };
+  currentChatName.textContent = currentRoom.name;
+  currentChatStatus.textContent = currentRoom.type === 'general' ? 'Public room' : 'Private room';
   messagesDiv.innerHTML = '';
-  socket.emit('join_room', { roomId: 1, roomType: 'general' });
+  socket.emit('join_room', { roomId: currentRoom.id, roomType: currentRoom.type });
 }
 
 // Socket Event Handlers
@@ -901,8 +925,7 @@ if (themeToggle) {
 // New chat button handler
 if (newChatBtn) {
   newChatBtn.addEventListener('click', () => {
-    showStatus('Доступен только общий чат', 'info');
-    switchChat({ id: 1, name: 'General Chat', type: 'general' });
+    showStatus('Выберите пользователя слева, чтобы пригласить в приватный чат', 'info');
   });
 }
 
@@ -1138,30 +1161,24 @@ function respondToInvite(accepted) {
   declineInvitationBtn.disabled = true;
   
   // Send response to server
-  socket.emit('private_invite_response', {
-    inviteId: invite.inviteId,
-    accepted: accepted
-  });
+  try {
+    socket.emit('respond-to-invitation', {
+      invitationId: invite.invitationId,
+      response: accepted ? 'accept' : 'reject'
+    });
+  } catch (_) {}
   
   // Remove from pending invitations
-  pendingInvitations.delete(invite.inviteId);
+  pendingInvitations.delete(invite.invitationId);
   
   // Hide modal
   hideInvitationModal();
   
   // Show appropriate status message
   if (accepted) {
-    showStatus(`Принято приглашение от ${invite.fromUser.username}`, 'success');
-    
-    // Switch to the private chat room
-    switchChat({
-      id: invite.roomId,
-      name: invite.fromUser.username,
-      type: 'private',
-      userId: invite.fromUser.id
-    });
+    showStatus(`Принято приглашение от ${invite.from}`, 'success');
   } else {
-    showStatus(`Отклонено приглашение от ${invite.fromUser.username}`, 'info');
+    showStatus(`Отклонено приглашение от ${invite.from}`, 'info');
   }
   
   // Re-enable buttons after delay
@@ -1184,55 +1201,47 @@ invitationModal.addEventListener('click', (e) => {
 
 // Note: Escape key handling is done in the main Escape handler above
 
-// Socket event handler for incoming invitations
-socket.on('private_invitation', (invite) => {
-  console.log('Received private chat invitation:', invite);
-  
-  // Ignore invitations before successful login
-  if (!currentUser) {
-    return;
-  }
-
-  if (!invite || !invite.inviteId || !invite.fromUser) {
-    console.error('Invalid invitation data:', invite);
-    return;
-  }
-  
-  // Store invitation
-  pendingInvitations.set(invite.inviteId, invite);
-  
-  // Check if device is mobile - don't show notification on mobile devices
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                   window.innerWidth <= 768;
-  
-  // Only show notification toast on desktop devices
+// Socket event handler for incoming invitations (new API)
+socket.on('invitation-received', (payload) => {
+  if (!currentUser) return;
+  if (!payload || !payload.invitationId || !payload.from) return;
+  const invite = {
+    invitationId: payload.invitationId,
+    from: payload.from
+  };
+  pendingInvitations.set(payload.invitationId, invite);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  // Adapt modal content
+  invitationAvatar.textContent = getAvatarInitials(payload.from);
+  invitationTitle.textContent = 'Приглашение в приватный чат';
+  invitationMessage.textContent = `${payload.from} хочет начать приватный чат с вами.`;
   if (!isMobile) {
-    showInvitationNotification(invite);
-    
-    // Play a subtle notification sound (if browser supports it)
-    try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+Dtyl4gBDWIzfPbfTEGHHnJ8OGVRAoRVK3n77BdGAg+ltryxnkpBSl+zPLaizsIGGS57+OZVA0NTaXh8bllHgg2jdXzzn0vBSF6yu/ejj0JE1Ko4/C2ZRwHN5DY88p9LgUme8rx3Y4+CRNSqOPwtmUcBzdOfz8B');
-      audio.volume = 0.1;
-      audio.play().catch(() => {});
-    } catch (e) {
-      // Ignore audio errors
-    }
+    showInvitationNotification({ fromUser: { username: payload.from } });
+  } else {
+    showInvitationModal({ fromUser: { username: payload.from }, invitationId: payload.invitationId });
   }
+  // Ensure currentInvite is set when opening modal via notification click
+  currentInvite = { invitationId: payload.invitationId, from: payload.from };
+});
+
+// When a private chat begins
+const privateChats = new Map(); // chatId -> { name }
+let lastInviteTarget = null;
+socket.on('chat-started', ({ chatId }) => {
+  if (!chatId) return;
+  const displayName = lastInviteTarget ? `Private chat with ${lastInviteTarget}` : 'Private chat';
+  privateChats.set(chatId, { name: displayName });
+  switchChat({ id: chatId, name: displayName, type: 'private' });
+  lastInviteTarget = null;
+});
+
+socket.on('invitation-declined', ({ invitationId, by }) => {
+  showStatus(`Пользователь ${by} отклонил приглашение`, 'info');
+  if (invitationId) pendingInvitations.delete(invitationId);
 });
 
 // Socket event handler for invitation response acknowledgment
-socket.on('invitation_response_ack', (data) => {
-  console.log('Invitation response acknowledged:', data);
-  
-  if (data.success) {
-    if (data.accepted) {
-      // Invitation was accepted, room should be joined
-      showStatus('Подключение к приватному чату...', 'success');
-    }
-  } else {
-    showStatus(data.error || 'Ошибка при обработке приглашения', 'error');
-  }
-});
+// Old invitation ack handler removed (using new events)
 
 // ===== TESTING FUNCTIONS (for demonstration) =====
 

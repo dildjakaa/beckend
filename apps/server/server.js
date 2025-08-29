@@ -32,6 +32,11 @@ const adminSendSupportMessageHandler = require('./api/admin/send-support-message
 const connectedUsers = new Map();
 const userRooms = new Map();
 
+// Invitation system state
+// Maps: userId -> socketId and invitationId -> { from, to, status }
+const onlineUsers = new Map();
+const pendingInvitations = new Map();
+
 // Helper function to broadcast online users
 function broadcastOnlineUsers() {
     const onlineUsers = Array.from(connectedUsers.values())
@@ -584,6 +589,9 @@ io.on('connection', (socket) => {
                 username: user.username,
                 socketId: socket.id
             });
+
+            // Track latest socket for this user
+            onlineUsers.set(user.id, socket.id);
             
             // Update last seen
             await query(
@@ -614,6 +622,119 @@ io.on('connection', (socket) => {
         } catch (error) {
             console.error('Token authentication error:', error);
             socket.emit('token_auth_error', { error: 'Invalid token' });
+        }
+    });
+
+    // Invite a user to a private chat
+    socket.on('invite-user', async (data) => {
+        try {
+            if (!socket.userId || !socket.username) {
+                socket.emit('server_error', { message: 'Not authenticated' });
+                return;
+            }
+            const targetUsername = (data && data.targetUsername) ? String(data.targetUsername).trim() : '';
+            if (!targetUsername) {
+                socket.emit('server_error', { message: 'Target username is required' });
+                return;
+            }
+            if (targetUsername === socket.username) {
+                socket.emit('server_error', { message: 'Cannot invite yourself' });
+                return;
+            }
+
+            // Find target user's socketId among connected users by username
+            let targetSocketId = null;
+            for (const userInfo of connectedUsers.values()) {
+                if (userInfo && userInfo.username === targetUsername) {
+                    targetSocketId = userInfo.socketId;
+                    break;
+                }
+            }
+
+            if (!targetSocketId) {
+                socket.emit('server_error', { message: 'Target user is not online' });
+                return;
+            }
+
+            const { randomUUID } = require('crypto');
+            const invitationId = randomUUID();
+            pendingInvitations.set(invitationId, {
+                from: socket.username,
+                to: targetUsername,
+                status: 'pending'
+            });
+
+            // Notify target user
+            io.to(targetSocketId).emit('invitation-received', {
+                from: socket.username,
+                invitationId
+            });
+
+            // Acknowledge to initiator (optional)
+            socket.emit('invitation-sent', { invitationId, to: targetUsername });
+        } catch (err) {
+            console.error('invite-user error:', err);
+            socket.emit('server_error', { message: 'Failed to send invitation' });
+        }
+    });
+
+    // Respond to an invitation
+    socket.on('respond-to-invitation', async (data) => {
+        try {
+            const invitationId = data && data.invitationId ? String(data.invitationId) : '';
+            const response = data && data.response ? String(data.response) : '';
+            if (!invitationId || !response) {
+                socket.emit('server_error', { message: 'Invalid invitation response' });
+                return;
+            }
+            const invitation = pendingInvitations.get(invitationId);
+            if (!invitation) {
+                socket.emit('server_error', { message: 'Invitation not found or expired' });
+                return;
+            }
+
+            // Only the invited target can respond
+            if (!socket.username || socket.username !== invitation.to) {
+                socket.emit('server_error', { message: 'You are not the invitation recipient' });
+                return;
+            }
+
+            // Find initiator socket by username
+            let initiatorSocketId = null;
+            for (const info of connectedUsers.values()) {
+                if (info && info.username === invitation.from) {
+                    initiatorSocketId = info.socketId;
+                    break;
+                }
+            }
+
+            if (response === 'accept') {
+                invitation.status = 'accepted';
+                const { randomUUID } = require('crypto');
+                const chatId = randomUUID();
+                // Join both users to the private room
+                socket.join(chatId);
+                if (initiatorSocketId && io.sockets.sockets.get(initiatorSocketId)) {
+                    io.sockets.sockets.get(initiatorSocketId).join(chatId);
+                }
+                // Notify both users
+                socket.emit('chat-started', { chatId });
+                if (initiatorSocketId) {
+                    io.to(initiatorSocketId).emit('chat-started', { chatId });
+                }
+                pendingInvitations.delete(invitationId);
+            } else if (response === 'reject') {
+                invitation.status = 'declined';
+                if (initiatorSocketId) {
+                    io.to(initiatorSocketId).emit('invitation-declined', { invitationId, by: socket.username });
+                }
+                pendingInvitations.delete(invitationId);
+            } else {
+                socket.emit('server_error', { message: 'Unknown response type' });
+            }
+        } catch (err) {
+            console.error('respond-to-invitation error:', err);
+            socket.emit('server_error', { message: 'Failed to process invitation response' });
         }
     });
 
@@ -691,6 +812,10 @@ io.on('connection', (socket) => {
     });
     
     socket.on('disconnect', () => {
+            const info = connectedUsers.get(socket.id);
+            if (info && onlineUsers.get(info.userId) === socket.id) {
+                onlineUsers.delete(info.userId);
+            }
             connectedUsers.delete(socket.id);
             broadcastOnlineUsers();
         console.log('User disconnected:', socket.id);
