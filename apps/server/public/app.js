@@ -424,7 +424,7 @@ socket.on('token_auth_success', (data) => {
     const avatar = createAvatarElement(currentUser.username, 32);
     userInfoDiv.innerHTML = `
       <div class="user-info-container">
-        ${avatar.outerHTML}
+        ${avatar.outerHTML} 
         <div class="user-info-text">
           <div class="username">${currentUser.username}</div>
         </div>

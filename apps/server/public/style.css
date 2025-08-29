@@ -108,46 +108,7 @@ body {
   min-width: 0;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: all 0.3s ease;
-  margin-right: 2rem;
-}
-
-.logo:hover {
-  transform: scale(1.02);
-}
-
-.logo-icon {
-  font-size: 1.5rem;
-  animation: pulse 2s infinite;
-  color: #6366f1;
-  text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
-}
-
-@keyframes pulse {
-  0%, 100% { 
-    transform: scale(1);
-    text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
-  }
-  50% { 
-    transform: scale(1.1);
-    text-shadow: 0 0 30px rgba(99, 102, 241, 0.8);
-  }
-}
-
-.logo h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(135deg, #ffffff, #e5e7eb);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+/* Logo styles removed - using header-logo instead */
 
 .header-logo {
   height: 80px;
@@ -288,10 +249,17 @@ body {
   color: white;
 }
 
-.logo-large {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  animation: pulse 2s infinite;
+.welcome-logo {
+  height: 120px;
+  width: auto;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3));
+}
+
+.welcome-logo:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4));
 }
 
 .welcome-section h1 {
@@ -1400,9 +1368,7 @@ body {
     gap: 0.75rem;
   }
   
-  .logo h1 {
-    font-size: 1.25rem;
-  }
+  /* Logo styles removed */
   
   .user-info {
     /* Keep user info visible on mobile */
@@ -1455,13 +1421,7 @@ body {
     gap: 0.5rem;
   }
   
-  .logo h1 {
-    font-size: 1.125rem;
-  }
-  
-  .logo-icon {
-    font-size: 1.25rem;
-  }
+  /* Logo styles removed */
   
   .sidebar {
     /* Always visible on mobile */
