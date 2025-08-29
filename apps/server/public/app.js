@@ -1215,42 +1215,46 @@ socket.on('invitation_response_ack', (data) => {
 
 // ===== TESTING FUNCTIONS (for demonstration) =====
 
-// Test function to simulate invitation (for testing purposes)
-function testInvitation() {
-  const mockInvitation = {
-    inviteId: 'test-invite-' + Date.now(),
-    roomId: 'private_1_2',
-    fromUser: {
-      id: 2,
-      username: 'TestUser'
-    },
-    message: 'Хочу обсудить с вами важный вопрос в приватном чате.'
-  };
-  
-  console.log('Testing invitation modal with mock data:', mockInvitation);
-  
-  // Check if device is mobile - don't show notification on mobile devices
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                   window.innerWidth <= 768;
-  
-  // Only show notification toast on desktop devices
-  if (!isMobile) {
-    showInvitationNotification(mockInvitation);
-  } else {
-    console.log('Skipping invitation notification on mobile device');
-  }
-}
+// Enable test utilities only on localhost or when explicitly requested via ?debug=1
+(function enableTestUtilitiesIfDebug() {
+  try {
+    const params = new URLSearchParams(location.search || '');
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const isDebug = params.get('debug') === '1';
 
-// Make test function globally available for console testing
-window.testInvitation = testInvitation;
+    if (!(isLocalhost || isDebug)) {
+      return; // Do not expose any test utilities in production
+    }
 
-// Console helper message
-console.log('🔧 Invitation modal is ready! You can test it by calling testInvitation() in the console.');
-console.log('📋 Available test functions:', {
-  testInvitation: 'Shows a mock invitation notification',
-  showInvitationModal: 'Directly shows the modal with mock data',
-  hideInvitationModal: 'Hides the modal',
-  showInvitationNotification: 'Shows notification toast',
-  hideInvitationNotification: 'Hides notification toast'
-});
+    // Test function to simulate invitation (for testing purposes)
+    function testInvitation() {
+      const mockInvitation = {
+        inviteId: 'test-invite-' + Date.now(),
+        roomId: 'private_1_2',
+        fromUser: {
+          id: 2,
+          username: 'TestUser'
+        },
+        message: 'Хочу обсудить с вами важный вопрос в приватном чате.'
+      };
+
+      console.log('Testing invitation modal with mock data:', mockInvitation);
+
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                       window.innerWidth <= 768;
+
+      if (!isMobile) {
+        showInvitationNotification(mockInvitation);
+      } else {
+        console.log('Skipping invitation notification on mobile device');
+      }
+    }
+
+    // Expose test function only in debug
+    window.testInvitation = testInvitation;
+
+    // Console helper message in debug only
+    console.log('🔧 [DEBUG] Invitation modal test utilities enabled. Call testInvitation() to simulate.');
+  } catch (_) {}
+})();
 
