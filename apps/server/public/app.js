@@ -382,16 +382,21 @@ socket.on('disconnect', (reason) => {
 socket.on('login_success', (data) => {
   if (data.success) {
     currentUser = data.user;
-    currentUser.avatar_url = data.user.avatar_url || generateAvatar(data.user.username);
+    currentUser.avatar_url = data.user.avatar_url || generateAvatar(currentUser.username);
     
     loginContainer.style.display = 'none';
     chatContainer.style.display = 'flex';
     
     // Update user info with avatar
-    const avatar = createAvatarElement(currentUser.username, 24);
+    const avatar = createAvatarElement(currentUser.username, 32);
     userInfoDiv.innerHTML = `
-      ${avatar.outerHTML}
-      <span>Вход выполнен: ${currentUser.username}</span>
+      <div class="user-info-container">
+        ${avatar.outerHTML}
+        <div class="user-info-text">
+          <div class="user-status">Вход выполнен</div>
+          <div class="username">${currentUser.username}</div>
+        </div>
+      </div>
     `;
     
     showStatus(`Добро пожаловать, ${currentUser.username}!`, 'success');
@@ -411,16 +416,21 @@ socket.on('login_error', (data) => {
 socket.on('token_auth_success', (data) => {
   if (data.success) {
     currentUser = data.user;
-    currentUser.avatar_url = data.user.avatar_url || generateAvatar(data.user.username);
+    currentUser.avatar_url = data.user.avatar_url || generateAvatar(currentUser.username);
     
     loginContainer.style.display = 'none';
     chatContainer.style.display = 'flex';
     
     // Update user info with avatar
-    const avatar = createAvatarElement(currentUser.username, 24);
+    const avatar = createAvatarElement(currentUser.username, 32);
     userInfoDiv.innerHTML = `
-      ${avatar.outerHTML}
-      <span>Вход выполнен: ${currentUser.username}</span>
+      <div class="user-info-container">
+        ${avatar.outerHTML}
+        <div class="user-info-text">
+          <div class="user-status">Вход выполнен</div>
+          <div class="username">${currentUser.username}</div>
+        </div>
+      </div>
     `;
     
     showStatus(`Добро пожаловать, ${currentUser.username}!`, 'success');
@@ -965,74 +975,12 @@ window.addEventListener('resize', () => {
   }
 });
 
-// Mobile sidebar toggle (for responsive design)
-function toggleMobileSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const mobileOverlay = document.getElementById('mobileOverlay');
-  
-  sidebar.classList.toggle('open');
-  mobileOverlay.classList.toggle('active');
-  
-  // Prevent body scroll when sidebar is open
-  document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
-}
+// Mobile sidebar functionality removed
 
-function closeMobileSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const mobileOverlay = document.getElementById('mobileOverlay');
-  
-  sidebar.classList.remove('open');
-  mobileOverlay.classList.remove('active');
-  document.body.style.overflow = '';
-}
-
-// Mobile navigation button handler
-const mobileNavBtn = document.getElementById('mobileNavBtn');
-if (mobileNavBtn) {
-  mobileNavBtn.addEventListener('click', toggleMobileSidebar);
-}
-
-// Mobile overlay click handler
-const mobileOverlay = document.getElementById('mobileOverlay');
-if (mobileOverlay) {
-  mobileOverlay.addEventListener('click', closeMobileSidebar);
-}
-
-// Close sidebar when switching chats on mobile
-const originalSwitchChat = switchChat;
-switchChat = function(room) {
-  originalSwitchChat.call(this, room);
-  
-  // Close mobile sidebar after switching chat
-  if (window.innerWidth <= 768) {
-    closeMobileSidebar();
-  }
-};
-
-// Handle escape key to close mobile sidebar
+// Handle escape key for invitation modal
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    // Priority: first close invitation modal, then close mobile sidebar
-    if (currentInvite) {
-      hideInvitationModal();
-    } else {
-      closeMobileSidebar();
-    }
-  }
-});
-
-// Handle window resize for mobile responsiveness
-const originalResizeHandler = window.onresize;
-window.addEventListener('resize', () => {
-  if (originalResizeHandler) originalResizeHandler();
-  
-  // Close sidebar if window is resized to desktop size
-  if (window.innerWidth > 768) {
-    closeMobileSidebar();
-  }
-  
-  if (currentUser) {
-    scrollToBottom();
+  if (e.key === 'Escape' && currentInvite) {
+    hideInvitationModal();
   }
 });
 
