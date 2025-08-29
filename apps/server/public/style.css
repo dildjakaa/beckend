@@ -325,6 +325,30 @@ body {
   background: var(--discord-tertiary);
 }
 
+.connection-test-btn {
+  background: none;
+  border: none;
+  color: var(--interactive-normal);
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.connection-test-btn:hover {
+  color: var(--interactive-hover);
+  background: var(--discord-tertiary);
+}
+
+.connection-test-btn.connected {
+  color: var(--discord-success);
+}
+
+.connection-test-btn.disconnected {
+  color: var(--discord-danger);
+}
+
 .channel-categories {
   flex: 1;
   padding: var(--spacing-md) 0;

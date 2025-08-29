@@ -60,6 +60,7 @@ const passwordInput = document.getElementById('password');
 const messageInput = document.getElementById('messageInput');
 const messagesDiv = document.getElementById('messages');
 const statusMessageDiv = document.getElementById('statusMessage');
+const connectionTestBtn = document.getElementById('connectionTestBtn');
 
 // Discord-like interface elements
 const serverList = document.querySelector('.server-list');
@@ -216,6 +217,33 @@ function initializeEventListeners() {
   
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcuts);
+  
+  // Connection test button
+  if (connectionTestBtn) {
+    connectionTestBtn.addEventListener('click', async () => {
+      connectionTestBtn.disabled = true;
+      connectionTestBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      
+      const isHealthy = await testServerConnection();
+      
+      if (isHealthy) {
+        connectionTestBtn.className = 'connection-test-btn connected';
+        connectionTestBtn.innerHTML = '<i class="fas fa-wifi"></i>';
+        showStatus('✅ Server connection: OK', 'success');
+      } else {
+        connectionTestBtn.className = 'connection-test-btn disconnected';
+        connectionTestBtn.innerHTML = '<i class="fas fa-wifi"></i>';
+        showStatus('❌ Server connection: Failed', 'error');
+      }
+      
+      connectionTestBtn.disabled = false;
+      
+      // Reset button state after 3 seconds
+      setTimeout(() => {
+        connectionTestBtn.className = 'connection-test-btn';
+      }, 3000);
+    });
+  }
 }
 
 // Login handling
@@ -269,35 +297,42 @@ async function handleLogin(e) {
       throw new Error(data.error || data.message || `Login failed with status ${response.status}`);
     }
     
-    // Check if data and data.user exist
-    if (!data || !data.user) {
-      console.error('Invalid response structure:', data);
+    // Handle both old and new response formats
+    let responseData = data;
+    if (data.success && data.data) {
+      // New format: {success: true, data: {...}}
+      responseData = data.data;
+    }
+    
+    // Check if responseData and responseData.user exist
+    if (!responseData || !responseData.user) {
+      console.error('Invalid response structure:', responseData);
       throw new Error('Invalid server response: missing user data');
     }
     
     // Check if required fields exist
-    if (!data.token) {
-      console.error('Missing token in response:', data);
+    if (!responseData.token) {
+      console.error('Missing token in response:', responseData);
       throw new Error('Invalid server response: missing authentication token');
     }
     
-    if (!data.user.id || !data.user.username) {
-      console.error('Missing required user fields:', data.user);
+    if (!responseData.user.id || !responseData.user.username) {
+      console.error('Missing required user fields:', responseData.user);
       throw new Error('Invalid server response: missing required user information');
     }
     
     console.log('Creating currentUser object with:', {
-      id: data.user.id,
-      username: data.user.username,
-      avatar: data.user.avatar_url || 'will generate'
+      id: responseData.user.id,
+      username: responseData.user.username,
+      avatar: responseData.user.avatar_url || 'will generate'
     });
     
     // Store token and user data
-    localStorage.setItem('authToken', data.token);
+    localStorage.setItem('authToken', responseData.token);
     currentUser = {
-      id: data.user.id,
-      username: data.user.username,
-      avatar: data.user.avatar_url || generateAvatar(data.user.username),
+      id: responseData.user.id,
+      username: responseData.user.username,
+      avatar: responseData.user.avatar_url || generateAvatar(responseData.user.username),
       status: 'online'
     };
     
@@ -1024,17 +1059,48 @@ async function testServerConnection() {
   try {
     console.log('Testing connection to:', SERVER_URL);
     const response = await fetch(`${SERVER_URL}/api/health`);
+    
+    if (!response.ok) {
+      console.error('Health check failed with status:', response.status);
+      return false;
+    }
+    
     const data = await response.json();
     console.log('Server health check response:', data);
-    return true;
+    
+    if (data.success && data.data && data.data.status === 'ok') {
+      console.log('✅ Server is healthy');
+      return true;
+    } else {
+      console.error('❌ Server health check failed:', data);
+      return false;
+    }
   } catch (error) {
     console.error('Server connection test failed:', error);
+    
+    // Check if it's a JSON parsing error (HTML response)
+    if (error.message.includes('Unexpected token')) {
+      console.error('❌ Server returned HTML instead of JSON. Server might be down or URL is wrong.');
+    }
+    
     return false;
   }
 }
 
 // Test connection on page load
-document.addEventListener('DOMContentLoaded', () => {
-  testServerConnection();
+document.addEventListener('DOMContentLoaded', async () => {
+  const isHealthy = await testServerConnection();
+  
+  if (isHealthy) {
+    showStatus('✅ Server connection: OK', 'success');
+    if (connectionTestBtn) {
+      connectionTestBtn.className = 'connection-test-btn connected';
+    }
+  } else {
+    showStatus('❌ Server connection: Failed', 'error');
+    if (connectionTestBtn) {
+      connectionTestBtn.className = 'connection-test-btn disconnected';
+    }
+  }
 });
 

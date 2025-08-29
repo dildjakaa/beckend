@@ -93,10 +93,21 @@
                     <p><strong>Response:</strong> <pre>${JSON.stringify(data, null, 2)}</pre></p>
                 `;
                 
-                if (response.ok) {
+                if (response.ok && data.success) {
                     resultDiv.className = 'result success';
+                    if (data.data && data.data.token && data.data.user) {
+                        resultDiv.innerHTML += `
+                            <h4>✅ Login Successful!</h4>
+                            <p><strong>Token:</strong> ${data.data.token.substring(0, 20)}...</p>
+                            <p><strong>User ID:</strong> ${data.data.user.id}</p>
+                            <p><strong>Username:</strong> ${data.data.user.username}</p>
+                        `;
+                    }
                 } else {
                     resultDiv.className = 'result error';
+                    if (data.error) {
+                        resultDiv.innerHTML += `<p class="error"><strong>Error:</strong> ${data.error}</p>`;
+                    }
                 }
             } catch (error) {
                 resultDiv.innerHTML = `
