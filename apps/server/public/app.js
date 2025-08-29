@@ -135,7 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // Event Listeners
 function initializeEventListeners() {
   // Login form
-  loginForm.addEventListener('submit', handleLogin);
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLogin);
+  } else {
+    console.error('Login form not found');
+  }
   
   // Registration form
   const registerForm = document.getElementById('registerForm');
@@ -184,7 +188,11 @@ if (backToRegisterBtn) {
 }
   
   // Message form
-  messageForm.addEventListener('submit', handleMessageSubmit);
+  if (messageForm) {
+    messageForm.addEventListener('submit', handleMessageSubmit);
+  } else {
+    console.error('Message form not found');
+  }
   
   // Server switching
   document.querySelectorAll('.server-item').forEach(item => {
@@ -236,8 +244,15 @@ if (backToRegisterBtn) {
 async function handleLogin(e) {
   e.preventDefault();
   
-  const username = usernameInput ? usernameInput.value.trim() : '';
-  const password = passwordInput ? passwordInput.value.trim() : '';
+  // Check if input elements exist
+  if (!usernameInput || !passwordInput) {
+    console.error('Login input elements not found:', { usernameInput, passwordInput });
+    showStatus('Login form elements not found', 'error');
+    return;
+  }
+  
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
   
   if (!username || !password) {
     showStatus('Please enter both username and password', 'error');
@@ -262,6 +277,15 @@ async function handleLogin(e) {
       throw new Error(data.error || 'Login failed');
     }
     
+    // Debug logging
+    console.log('Login response data:', data);
+    
+    // Validate response structure
+    if (!data.user || !data.user.id || !data.user.username) {
+      console.error('Invalid response structure:', data);
+      throw new Error('Invalid response from server');
+    }
+    
     // Store user data and token
     currentUser = {
       id: data.user.id,
@@ -271,11 +295,15 @@ async function handleLogin(e) {
     };
     
     // Store token for socket authentication
-    localStorage.setItem('authToken', data.token);
-    
-    // Authenticate with socket
-    if (socket && isConnected) {
-      socket.emit('authenticate_with_token', { token: data.token });
+    if (data.token) {
+      localStorage.setItem('authToken', data.token);
+      
+      // Authenticate with socket
+      if (socket && isConnected) {
+        socket.emit('authenticate_with_token', { token: data.token });
+      }
+    } else {
+      console.warn('No token received from server');
     }
     
     // Update UI
