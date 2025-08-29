@@ -122,10 +122,29 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Check if user is already logged in
   const token = localStorage.getItem('authToken');
-  if (token) {
-    // Try to restore session
-    showStatus('Restoring session...', 'info');
-    showChatInterface();
+  const userData = localStorage.getItem('userData');
+  if (token && userData) {
+    try {
+      // Try to restore session
+      showStatus('Restoring session...', 'info');
+      currentUser = JSON.parse(userData);
+      
+      // Verify user data integrity
+      if (currentUser && currentUser.username && currentUser.avatar) {
+        showChatInterface();
+        updateUserInterface();
+        showStatus('Session restored successfully', 'success');
+      } else {
+        throw new Error('Invalid user data');
+      }
+    } catch (error) {
+      console.error('Session restoration failed:', error);
+      // Clear invalid data
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      currentUser = null;
+      showStatus('Session expired. Please log in again.', 'warning');
+    }
   }
   
   // Set default active states
@@ -232,8 +251,13 @@ async function handleLogin(e) {
       status: 'online'
     };
     
+    // Verify that currentUser was set correctly
+    if (!currentUser || !currentUser.username || !currentUser.avatar) {
+      throw new Error('Failed to create user session');
+    }
+    
     // Authenticate with Socket.IO
-    if (socket && isConnected) {
+    if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
       socket.emit('authenticate_with_token', { token: data.token });
     }
     
@@ -244,6 +268,9 @@ async function handleLogin(e) {
     
     // Join default channel
     joinChannel('general');
+    
+    // Store user data in localStorage for session restoration 
+    localStorage.setItem('userData', JSON.stringify(currentUser));
     
   } catch (error) {
     console.error('Login error:', error);
@@ -257,11 +284,12 @@ function handleLogout() {
   currentUser = null;
   onlineUsers.clear();
   
-  // Clear token
+  // Clear token and user data (maybe stop?)
   localStorage.removeItem('authToken');
+  localStorage.removeItem('userData');
   
   // Disconnect socket
-  if (socket) {
+  if (socket && socket.connected) {
     socket.disconnect();
   }
   
@@ -269,6 +297,10 @@ function handleLogout() {
   if (messagesDiv) messagesDiv.innerHTML = '';
   if (membersList) membersList.innerHTML = '';
   if (onlineCount) onlineCount.textContent = '0';
+  
+  // Reset current channel and server
+  currentChannel = 'general';
+  currentServer = 'home';
   
   // Show login form
   showLoginInterface();
@@ -293,6 +325,12 @@ function generateAvatar(username) {
 
 // Join channel function
 function joinChannel(channelId) {
+  // Check if user is logged in and has valid data
+  if (!currentUser || !currentUser.username || !currentUser.avatar) {
+    showStatus('Please log in to join channels', 'error');
+    return;
+  }
+  
   if (channelId === currentChannel) return;
   
   // Update active channel
@@ -322,7 +360,7 @@ function joinChannel(channelId) {
   loadChannelMessages(channelId);
   
   // Emit join room event to server
-  if (socket && isConnected && currentUser?.id) {
+  if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
     const roomId = channelId === 'general' ? 1 : channelId;
     socket.emit('join_room', { roomId: roomId, roomType: 'text' });
   }
@@ -330,7 +368,10 @@ function joinChannel(channelId) {
 
 // Update user interface
 function updateUserInterface() {
-  if (!currentUser) return;
+  if (!currentUser || !currentUser.username || !currentUser.avatar) {
+    console.warn('Cannot update user interface: invalid user data');
+    return;
+  }
   
   // Update user panel
   if (userAvatar) userAvatar.src = currentUser.avatar;
@@ -355,6 +396,12 @@ function updateUserInterface() {
 
 // Show chat interface
 function showChatInterface() {
+  // Only show chat interface if user is logged in and has valid data
+  if (!currentUser || !currentUser.username || !currentUser.avatar) {
+    showStatus('Please log in to access chat', 'error');
+    return;
+  }
+  
   if (loginContainer) loginContainer.style.display = 'none';
   if (chatContainer) chatContainer.style.display = 'flex';
 }
@@ -371,6 +418,12 @@ function showLoginInterface() {
 
 // Server switching
 function switchServer(serverId) {
+  // Check if user is logged in and has valid data
+  if (!currentUser || !currentUser.username || !currentUser.avatar) {
+    showStatus('Please log in to switch servers', 'error');
+    return;
+  }
+  
   if (serverId === currentServer) return;
   
   // Update active server
@@ -406,6 +459,12 @@ function switchServer(serverId) {
 
 // Channel switching
 function switchChannel(channelId) {
+  // Check if user is logged in and has valid data
+  if (!currentUser || !currentUser.username || !currentUser.avatar) {
+    showStatus('Please log in to switch channels', 'error');
+    return;
+  }
+  
   joinChannel(channelId);
 }
 
@@ -437,6 +496,14 @@ function updateChannelList() {
 function handleMessageSubmit(e) {
   e.preventDefault();
   
+  // Check if user is logged in and has required fields
+  if (!currentUser || !currentUser.username || !currentUser.avatar) {
+    showStatus('User session is invalid. Please log in again.', 'error');
+    // Try to restore session or redirect to login
+    handleLogout();
+    return;
+  }
+  
   const message = messageInput.value.trim();
   if (!message) return;
   
@@ -451,7 +518,7 @@ function handleMessageSubmit(e) {
   });
   
   // Send message to server
-  if (socket && isConnected && currentUser?.id) {
+  if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
     socket.emit('send_message', {
       content: message,
       roomId: currentChannel === 'general' ? 1 : currentChannel
@@ -465,7 +532,7 @@ function handleMessageSubmit(e) {
 // Add message to UI
 function addMessage(messageData) {
   const messageElement = document.createElement('div');
-  const isOwnMessage = messageData.isOwn || messageData.username === currentUser?.username;
+  const isOwnMessage = messageData.isOwn || (currentUser && currentUser.username && currentUser.avatar && messageData.username === currentUser.username);
   
   messageElement.className = `message ${isOwnMessage ? 'own' : 'other'}`;
   
@@ -509,16 +576,19 @@ function loadChannelMessages(channelId) {
 // Update online count
 function updateOnlineCount() {
   if (onlineCount) {
-    const count = onlineUsers.size + 1; // +1 for current user
+    const count = onlineUsers.size + (currentUser && currentUser.username && currentUser.avatar ? 1 : 0); // +1 for current user if logged in and valid
     onlineCount.textContent = count;
   }
 }
 
 // Update members list
 function updateMembersList() {
-  if (membersList) {
+  if (membersList && currentUser && currentUser.username && currentUser.avatar) {
     const members = Array.from(onlineUsers.values());
-    members.push(currentUser);
+    // Only add currentUser if it exists and has required properties
+    if (currentUser && currentUser.username && currentUser.avatar) {
+      members.push(currentUser);
+    }
     
     membersList.innerHTML = members.map(member => `
       <div class="member-item">
@@ -537,6 +607,12 @@ function updateMembersList() {
 
 // Server management
 function createServer() {
+  // Check if user is logged in and has valid data
+  if (!currentUser || !currentUser.username || !currentUser.avatar) {
+    showStatus('Please log in to create servers', 'error');
+    return;
+  }
+  
   const name = serverNameInput ? serverNameInput.value.trim() : '';
   const description = serverDescriptionInput ? serverDescriptionInput.value.trim() : '';
   
@@ -592,6 +668,12 @@ function addServerToUI(server) {
 
 // Friend system
 function addFriend() {
+  // Check if user is logged in and has valid data
+  if (!currentUser || !currentUser.username || !currentUser.avatar) {
+    showStatus('Please log in to add friends', 'error');
+    return;
+  }
+  
   const username = friendUsernameInput ? friendUsernameInput.value.trim() : '';
   
   if (!username) {
@@ -623,7 +705,7 @@ function addFriend() {
 
 // Update direct messages
 function updateDirectMessages() {
-  if (directMessagesList) {
+  if (directMessagesList && currentUser && currentUser.username && currentUser.avatar) {
     directMessagesList.innerHTML = friends.map(friend => `
       <div class="channel-item" data-channel-id="dm-${friend.username}">
         <i class="fas fa-user"></i>
