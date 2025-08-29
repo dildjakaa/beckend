@@ -83,7 +83,15 @@ module.exports = async function handler(req, res) {
       { expiresIn: '7d' }
     );
 
-    return success(res, { token });
+    return success(res, { 
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar_url: user.avatar_url
+      }
+    });
 
   } catch (error) {
     console.error('Login error:', error);

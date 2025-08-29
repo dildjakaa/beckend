@@ -20,6 +20,12 @@ socket.on('connect', () => {
   console.log('Connected to server');
   showStatus('Connected to server', 'success');
   isConnected = true;
+  
+  // Auto-authenticate if user has token
+  const authToken = localStorage.getItem('authToken');
+  if (authToken && currentUser) {
+    socket.emit('authenticate_with_token', { token: authToken });
+  }
 });
 
 socket.on('disconnect', () => {
@@ -195,12 +201,36 @@ async function handleLogin(e) {
   try {
     showStatus('Logging in...', 'info');
     
-    // Simulate login (replace with actual authentication)
+    // Real authentication with server
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+    
+    // Store user data and token
     currentUser = {
-      username: username,
-      avatar: generateAvatar(username),
+      id: data.user.id,
+      username: data.user.username,
+      avatar: data.user.avatar_url || generateAvatar(data.user.username),
       status: 'online'
     };
+    
+    // Store token for socket authentication
+    localStorage.setItem('authToken', data.token);
+    
+    // Authenticate with socket
+    if (socket && isConnected) {
+      socket.emit('authenticate_with_token', { token: data.token });
+    }
     
     // Update UI
     updateUserInterface();
@@ -212,7 +242,7 @@ async function handleLogin(e) {
     
   } catch (error) {
     console.error('Login error:', error);
-    showStatus('Login failed. Please try again.', 'error');
+    showStatus(error.message || 'Login failed. Please try again.', 'error');
   }
 }
 
@@ -264,7 +294,8 @@ function joinChannel(channelId) {
   
   // Emit join room event to server
   if (socket && isConnected) {
-    socket.emit('join_room', { roomId: channelId, roomType: 'text' });
+    const roomId = channelId === 'general' ? 1 : channelId;
+    socket.emit('join_room', { roomId: roomId, roomType: 'text' });
   }
 }
 
@@ -297,6 +328,12 @@ function updateUserInterface() {
 function showChatInterface() {
   if (loginContainer) loginContainer.style.display = 'none';
   if (chatContainer) chatContainer.style.display = 'flex';
+}
+
+// Show login interface
+function showLoginInterface() {
+  if (chatContainer) chatContainer.style.display = 'none';
+  if (loginContainer) loginContainer.style.display = 'block';
 }
 
 // Server switching
@@ -393,10 +430,9 @@ function handleMessageSubmit(e) {
   
   // Send message to server
   if (socket && isConnected) {
-    socket.emit('message', {
-      room: currentChannel,
-      message: message,
-      username: currentUser.username
+    socket.emit('send_message', {
+      roomId: currentChannel === 'general' ? 1 : currentChannel,
+      content: message
     });
   }
   
@@ -734,6 +770,61 @@ socket.on('message', (data) => {
       content: data.message,
       timestamp: new Date(),
       isOwn: false
+    });
+  }
+});
+
+// Handle new messages from server
+socket.on('new_message', (data) => {
+  if (data.userId !== currentUser?.id) {
+    addMessage({
+      id: data.id,
+      username: data.username,
+      avatar: generateAvatar(data.username),
+      content: data.content,
+      timestamp: new Date(data.timestamp),
+      isOwn: false
+    });
+  }
+});
+
+// Handle successful authentication
+socket.on('token_auth_success', (data) => {
+  console.log('Successfully authenticated with server');
+  showStatus('Successfully connected to chat', 'success');
+  
+  // Update user data if needed
+  if (data.user && data.user.id) {
+    currentUser.id = data.user.id;
+  }
+});
+
+// Handle authentication errors
+socket.on('token_auth_error', (data) => {
+  console.error('Authentication error:', data.error);
+  showStatus('Authentication failed. Please login again.', 'error');
+  localStorage.removeItem('authToken');
+  currentUser = null;
+  showLoginInterface();
+});
+
+// Handle room joined event
+socket.on('room_joined', (data) => {
+  console.log('Joined room:', data);
+  if (data.success && data.messages) {
+    // Clear existing messages
+    if (messagesDiv) messagesDiv.innerHTML = '';
+    
+    // Load messages from server
+    data.messages.forEach(msg => {
+      addMessage({
+        id: msg.id,
+        username: msg.username,
+        avatar: generateAvatar(msg.username),
+        content: msg.content,
+        timestamp: new Date(msg.timestamp),
+        isOwn: msg.user_id === currentUser?.id
+      });
     });
   }
 });

@@ -14,7 +14,7 @@
     "migrate": "node scripts/migrate-db.js",
     "reset-db": "node scripts/reset-db.js",
     "setup-email": "node scripts/setup-corporate-email.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test-messenger.js"
   },
   "keywords": [
     "messenger",
