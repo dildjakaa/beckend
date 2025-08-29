@@ -393,7 +393,6 @@ socket.on('login_success', (data) => {
       <div class="user-info-container">
         ${avatar.outerHTML}
         <div class="user-info-text">
-          <div class="user-status">Вход выполнен</div>
           <div class="username">${currentUser.username}</div>
         </div>
       </div>
@@ -427,7 +426,6 @@ socket.on('token_auth_success', (data) => {
       <div class="user-info-container">
         ${avatar.outerHTML}
         <div class="user-info-text">
-          <div class="user-status">Вход выполнен</div>
           <div class="username">${currentUser.username}</div>
         </div>
       </div>
