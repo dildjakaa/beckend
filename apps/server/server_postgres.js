@@ -418,9 +418,24 @@ io.on('connection', (socket) => {
         }
         
         try {
-            console.log('Getting room messages for room:', data.roomId || 1);
-            
-            // Get room messages
+            const roomId = (data && data.roomId) ? data.roomId : 1;
+            console.log('Getting room messages for room:', roomId);
+
+            // Join socket.io room (string id to support UUID)
+            try { socket.join(String(roomId)); } catch (e) { console.warn('join room error', e); }
+
+            const isNumericRoom = (typeof roomId === 'number') || (/^\d+$/.test(String(roomId)));
+            if (!isNumericRoom) {
+                // Private ephemeral room -> no DB history
+                socket.emit('room_joined', {
+                    success: true,
+                    roomId: roomId,
+                    messages: []
+                });
+                return;
+            }
+
+            // Get room messages for numeric rooms
             const messagesResult = await query(
                 `SELECT m.*, u.username 
              FROM messages m 
@@ -428,14 +443,12 @@ io.on('connection', (socket) => {
                  WHERE m.room_id = $1 
              ORDER BY m.timestamp ASC 
              LIMIT 50`,
-                [data.roomId || 1]
+                [Number(roomId)]
             );
-            
-            console.log('Found messages:', messagesResult.rows.length);
             
             socket.emit('room_joined', {
                 success: true,
-                roomId: data.roomId || 1,
+                roomId: Number(roomId),
                 messages: messagesResult.rows
             });
             
@@ -482,35 +495,49 @@ io.on('connection', (socket) => {
         }
         
         try {
-            console.log('Saving message to database:', {
-                userId: socket.userId,
-                roomId: data.roomId || 1,
-                content: data.content
-            });
-            
+            const rawContent = (data && data.content != null) ? String(data.content) : '';
+            const trimmedContent = rawContent.trim();
+            if (!trimmedContent) {
+                socket.emit('server_error', { message: 'Message cannot be empty' });
+                return;
+            }
+
+            const roomId = (data && data.roomId) ? data.roomId : 1;
+            const isNumericRoom = (typeof roomId === 'number') || (/^\d+$/.test(String(roomId)));
+
+            if (!isNumericRoom) {
+                // Ephemeral private room: don't persist; emit to room only
+                const messageData = {
+                    id: `ephemeral-${Date.now()}`,
+                    userId: socket.userId,
+                    username: socket.username,
+                    content: trimmedContent,
+                    timestamp: new Date().toISOString(),
+                    roomId: roomId
+                };
+                io.to(String(roomId)).emit('new_message', messageData);
+                return;
+            }
+
             const result = await query(
                 'INSERT INTO messages (user_id, room_id, content) VALUES ($1, $2, $3) RETURNING *',
-                [socket.userId, data.roomId || 1, data.content]
+                [socket.userId, Number(roomId), trimmedContent]
             );
             
             const message = result.rows[0];
-            console.log('Message saved, broadcasting:', {
+            const messageData = {
                 id: message.id,
                 userId: socket.userId,
                 username: socket.username,
                 content: message.content,
                 timestamp: message.timestamp,
-                roomId: data.roomId || 1
-            });
-            
-            io.emit('new_message', {
-                id: message.id,
-                userId: socket.userId,
-                username: socket.username,
-                content: message.content,
-                timestamp: message.timestamp,
-                roomId: data.roomId || 1
-            });
+                roomId: Number(roomId)
+            };
+            if (Number(roomId) === 1) {
+                io.emit('new_message', messageData);
+            } else {
+                io.to(String(roomId)).emit('new_message', messageData);
+            }
         } catch (error) {
             console.error('Error saving message:', error);
         }

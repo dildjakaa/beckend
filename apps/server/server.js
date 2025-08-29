@@ -745,7 +745,17 @@ io.on('connection', (socket) => {
         }
         
         try {
-            // Get room messages
+            const roomId = (data && data.roomId) ? data.roomId : 1;
+            try { socket.join(String(roomId)); } catch (_) {}
+            const isNumericRoom = (typeof roomId === 'number') || (/^\d+$/.test(String(roomId)));
+            if (!isNumericRoom) {
+                socket.emit('room_joined', {
+                    success: true,
+                    roomId: roomId,
+                    messages: []
+                });
+                return;
+            }
             const messagesResult = await query(
                 `SELECT m.*, u.username 
              FROM messages m 
@@ -753,12 +763,11 @@ io.on('connection', (socket) => {
                  WHERE m.room_id = $1 
              ORDER BY m.timestamp DESC 
              LIMIT 50`,
-                [data.roomId || 1]
+                [Number(roomId)]
             );
-            
-                socket.emit('room_joined', {
-                    success: true,
-                roomId: data.roomId || 1,
+            socket.emit('room_joined', {
+                success: true,
+                roomId: Number(roomId),
                 messages: messagesResult.rows.reverse()
             });
             
@@ -781,29 +790,39 @@ io.on('connection', (socket) => {
                 socket.emit('server_error', { message: 'Message cannot be empty' });
                 return;
             }
+            const roomId = (data && data.roomId) ? data.roomId : 1;
+            const isNumericRoom = (typeof roomId === 'number') || (/^\d+$/.test(String(roomId)));
+            if (!isNumericRoom) {
+                const messageData = {
+                    id: `ephemeral-${Date.now()}`,
+                    userId: socket.userId,
+                    username: socket.username,
+                    content: trimmedContent,
+                    timestamp: new Date().toISOString(),
+                    roomId: roomId
+                };
+                io.to(String(roomId)).emit('new_message', messageData);
+                return;
+            }
             const result = await query(
                 'INSERT INTO messages (user_id, room_id, content) VALUES ($1, $2, $3) RETURNING *',
-                [socket.userId, data.roomId || 1, trimmedContent]
+                [socket.userId, Number(roomId), trimmedContent]
             );
-            
             const message = result.rows[0];
-            
-            // Get username for the message
-            const userResult = await query(
-                'SELECT username FROM users WHERE id = $1',
-                [socket.userId]
-            );
-                
+            const userResult = await query('SELECT username FROM users WHERE id = $1', [socket.userId]);
             const messageData = {
                 id: message.id,
                 userId: message.user_id,
                 username: userResult.rows[0].username,
                 content: message.content || trimmedContent,
                 timestamp: message.timestamp || new Date().toISOString(),
-                roomId: message.room_id
+                roomId: Number(roomId)
             };
-            
-            io.emit('new_message', messageData);
+            if (Number(roomId) === 1) {
+                io.emit('new_message', messageData);
+            } else {
+                io.to(String(roomId)).emit('new_message', messageData);
+            }
             
         } catch (error) {
             console.error('Error saving message:', error);
