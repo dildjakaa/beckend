@@ -29,21 +29,8 @@ socket.on('connect', () => {
   
   // Auto-authenticate if we have a token
   const token = localStorage.getItem('authToken');
-  const userData = localStorage.getItem('userData');
-  
-  if (token && userData) {
-    try {
-      const user = JSON.parse(userData);
-      if (user && user.id) {
-        currentUser = user;
-        console.log('Restored user session:', user);
-        socket.emit('authenticate_with_token', { token: token });
-      }
-    } catch (error) {
-      console.error('Failed to restore user session:', error);
-      localStorage.removeItem('userData');
-      localStorage.removeItem('authToken');
-    }
+  if (token && currentUser?.id) {
+    socket.emit('authenticate_with_token', { token: token });
   }
 });
 
@@ -51,7 +38,6 @@ socket.on('disconnect', () => {
   console.log('Disconnected from server');
   showStatus('Disconnected from server', 'warning');
   isConnected = false;
-  isSocketAuthenticated = false;
 });
 
 socket.on('connect_error', (error) => {
@@ -64,60 +50,6 @@ socket.on('server_error', ({ message }) => {
   showStatus(message || 'Server error occurred', 'error');
 });
 
-// Handle token authentication responses
-socket.on('token_auth_success', (data) => {
-  console.log('✅ Socket authentication successful:', data);
-  isSocketAuthenticated = true;
-  showStatus('Socket authenticated successfully', 'success');
-});
-
-socket.on('token_auth_error', (data) => {
-  console.error('❌ Socket authentication failed:', data);
-  isSocketAuthenticated = false;
-  showStatus('Socket authentication failed: ' + (data.error || 'Unknown error'), 'error');
-});
-
-// Handle room join responses
-socket.on('room_joined', (data) => {
-  console.log('✅ Joined room:', data);
-  if (data.success) {
-    showStatus(`Joined #${data.roomId}`, 'success');
-    
-    // Load messages if available
-    if (data.messages && Array.isArray(data.messages)) {
-      // Clear existing messages
-      if (messagesDiv) messagesDiv.innerHTML = '';
-      
-      // Load messages from server
-      data.messages.forEach(msg => {
-        addMessage({
-          id: msg.id,
-          username: msg.username,
-          avatar: generateAvatar(msg.username),
-          content: msg.content,
-          timestamp: new Date(msg.timestamp),
-          isOwn: msg.username === currentUser?.username
-        });
-      });
-    }
-  } else {
-    showStatus('Failed to join room', 'error');
-  }
-});
-
-// Handle new messages
-socket.on('new_message', (data) => {
-  console.log('📨 New message received:', data);
-  addMessage({
-    id: data.id || Date.now(),
-    username: data.username,
-    avatar: generateAvatar(data.username),
-    content: data.content,
-    timestamp: new Date(data.timestamp),
-    isOwn: data.username === currentUser?.username
-  });
-});
-
 // DOM Elements
 const loginContainer = document.getElementById('loginContainer');
 const chatContainer = document.getElementById('chatContainer');
@@ -128,7 +60,6 @@ const passwordInput = document.getElementById('password');
 const messageInput = document.getElementById('messageInput');
 const messagesDiv = document.getElementById('messages');
 const statusMessageDiv = document.getElementById('statusMessage');
-const connectionTestBtn = document.getElementById('connectionTestBtn');
 
 // Discord-like interface elements
 const serverList = document.querySelector('.server-list');
@@ -175,7 +106,6 @@ const friendUsernameInput = document.getElementById('friendUsername');
 // Application state
 let currentUser = null;
 let isConnected = false;
-let isSocketAuthenticated = false;
 let currentServer = 'home';
 let currentChannel = 'general';
 let onlineUsers = new Map();
@@ -286,33 +216,6 @@ function initializeEventListeners() {
   
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcuts);
-  
-  // Connection test button
-  if (connectionTestBtn) {
-    connectionTestBtn.addEventListener('click', async () => {
-      connectionTestBtn.disabled = true;
-      connectionTestBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      
-      const isHealthy = await testServerConnection();
-      
-      if (isHealthy) {
-        connectionTestBtn.className = 'connection-test-btn connected';
-        connectionTestBtn.innerHTML = '<i class="fas fa-wifi"></i>';
-        showStatus('✅ Server connection: OK', 'success');
-      } else {
-        connectionTestBtn.className = 'connection-test-btn disconnected';
-        connectionTestBtn.innerHTML = '<i class="fas fa-wifi"></i>';
-        showStatus('❌ Server connection: Failed', 'error');
-      }
-      
-      connectionTestBtn.disabled = false;
-      
-      // Reset button state after 3 seconds
-      setTimeout(() => {
-        connectionTestBtn.className = 'connection-test-btn';
-      }, 3000);
-    });
-  }
 }
 
 // Login handling
@@ -371,6 +274,9 @@ async function handleLogin(e) {
     if (data.success && data.data) {
       // New format: {success: true, data: {...}}
       responseData = data.data;
+      console.log('Using new response format, extracted data:', responseData);
+    } else {
+      console.log('Using old response format, data:', data);
     }
     
     // Check if responseData and responseData.user exist
@@ -422,25 +328,11 @@ async function handleLogin(e) {
     showChatInterface();
     showStatus(`Welcome back, ${username}!`, 'success');
     
+    // Join default channel
+    joinChannel('general');
+    
     // Store user data in localStorage for session restoration 
     localStorage.setItem('userData', JSON.stringify(currentUser));
-    
-    // Wait for socket authentication before joining channel
-    setTimeout(() => {
-      if (isSocketAuthenticated) {
-        joinChannel('general');
-      } else {
-        console.warn('Socket not authenticated yet, retrying in 1 second...');
-        setTimeout(() => {
-          if (isSocketAuthenticated) {
-            joinChannel('general');
-          } else {
-            console.error('Failed to authenticate socket after retry');
-            showStatus('Failed to authenticate socket', 'error');
-          }
-        }, 1000);
-      }
-    }, 500);
     
   } catch (error) {
     console.error('Login error:', error);
@@ -454,6 +346,8 @@ async function handleLogin(e) {
       errorMessage = 'Server returned invalid data. Please try again.';
     } else if (error.message.includes('Network error')) {
       errorMessage = 'Network error. Please check your internet connection.';
+    } else if (error.message.includes('Неверное имя пользователя или пароль')) {
+      errorMessage = 'Неверное имя пользователя или пароль. Проверьте правильность введенных данных.';
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -467,7 +361,6 @@ function handleLogout() {
   // Clear user data
   currentUser = null;
   onlineUsers.clear();
-  isSocketAuthenticated = false;
   
   // Clear token and user data (maybe stop?)
   localStorage.removeItem('authToken');
@@ -516,12 +409,6 @@ function joinChannel(channelId) {
     return;
   }
   
-  // Check if socket is authenticated
-  if (!isSocketAuthenticated) {
-    showStatus('Please wait for socket authentication', 'warning');
-    return;
-  }
-  
   if (channelId === currentChannel) return;
   
   // Update active channel
@@ -551,7 +438,7 @@ function joinChannel(channelId) {
   loadChannelMessages(channelId);
   
   // Emit join room event to server
-  if (socket && socket.connected && isConnected && isSocketAuthenticated && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
+  if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
     const roomId = channelId === 'general' ? 1 : channelId;
     socket.emit('join_room', { roomId: roomId, roomType: 'text' });
   }
@@ -709,14 +596,11 @@ function handleMessageSubmit(e) {
   });
   
   // Send message to server
-  if (socket && socket.connected && isConnected && isSocketAuthenticated && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
+  if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
     socket.emit('send_message', {
       content: message,
       roomId: currentChannel === 'general' ? 1 : currentChannel
     });
-  } else {
-    console.error('Cannot send message: socket not ready or user not authenticated');
-    showStatus('Cannot send message: not authenticated', 'error');
   }
   
   // Clear input
@@ -1181,19 +1065,7 @@ async function testServerConnection() {
 }
 
 // Test connection on page load
-document.addEventListener('DOMContentLoaded', async () => {
-  const isHealthy = await testServerConnection();
-  
-  if (isHealthy) {
-    showStatus('✅ Server connection: OK', 'success');
-    if (connectionTestBtn) {
-      connectionTestBtn.className = 'connection-test-btn connected';
-    }
-  } else {
-    showStatus('❌ Server connection: Failed', 'error');
-    if (connectionTestBtn) {
-      connectionTestBtn.className = 'connection-test-btn disconnected';
-    }
-  }
+document.addEventListener('DOMContentLoaded', () => {
+  testServerConnection();
 });
 

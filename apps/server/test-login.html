@@ -93,9 +93,9 @@
                     <p><strong>Response:</strong> <pre>${JSON.stringify(data, null, 2)}</pre></p>
                 `;
                 
-                if (response.ok && data.success) {
+                if (response.ok) {
                     resultDiv.className = 'result success';
-                    if (data.data && data.data.token && data.data.user) {
+                    if (data.success && data.data && data.data.token && data.data.user) {
                         resultDiv.innerHTML += `
                             <h4>✅ Login Successful!</h4>
                             <p><strong>Token:</strong> ${data.data.token.substring(0, 20)}...</p>
