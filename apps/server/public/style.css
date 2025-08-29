@@ -861,7 +861,7 @@ body {
 .chat-last-message {
   font-size: 0.75rem;
   color: var(--text-tertiary);
-  truncate: ellipsis;
+  truncate: ellipsis; 
   overflow: hidden;
   white-space: nowrap;
 }
