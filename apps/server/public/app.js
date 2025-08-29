@@ -184,8 +184,8 @@ function initializeEventListeners() {
 async function handleLogin(e) {
   e.preventDefault();
   
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value.trim();
+  const username = usernameInput ? usernameInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value.trim() : '';
   
   if (!username || !password) {
     showStatus('Please enter both username and password', 'error');
@@ -251,13 +251,13 @@ function joinChannel(channelId) {
   // Update channel info
   const channel = channels[currentServer]?.find(c => c.id === channelId);
   if (channel) {
-    currentChannelName.textContent = channel.name;
-    channelTopic.textContent = channel.topic;
-    messageInput.placeholder = `Message #${channel.name}`;
+    if (currentChannelName) currentChannelName.textContent = channel.name;
+    if (channelTopic) channelTopic.textContent = channel.topic;
+    if (messageInput) messageInput.placeholder = `Message #${channel.name}`;
   }
   
   // Clear messages for new channel
-  messagesDiv.innerHTML = '';
+  if (messagesDiv) messagesDiv.innerHTML = '';
   
   // Load channel messages
   loadChannelMessages(channelId);
@@ -273,16 +273,16 @@ function updateUserInterface() {
   if (!currentUser) return;
   
   // Update user panel
-  userAvatar.src = currentUser.avatar;
-  userDisplayName.textContent = currentUser.username;
-  userStatus.textContent = currentUser.status;
+  if (userAvatar) userAvatar.src = currentUser.avatar;
+  if (userDisplayName) userDisplayName.textContent = currentUser.username;
+  if (userStatus) userStatus.textContent = currentUser.status;
   
   // Update channel name
-  currentChannelName.textContent = currentChannel;
+  if (currentChannelName) currentChannelName.textContent = currentChannel;
   
   // Update channel topic
   const channel = channels[currentServer]?.find(c => c.id === currentChannel);
-  if (channel) {
+  if (channel && channelTopic) {
     channelTopic.textContent = channel.topic;
   }
   
@@ -295,8 +295,8 @@ function updateUserInterface() {
 
 // Show chat interface
 function showChatInterface() {
-  loginContainer.style.display = 'none';
-  chatContainer.style.display = 'flex';
+  if (loginContainer) loginContainer.style.display = 'none';
+  if (chatContainer) chatContainer.style.display = 'flex';
 }
 
 // Server switching
@@ -307,7 +307,11 @@ function switchServer(serverId) {
   document.querySelectorAll('.server-item').forEach(item => {
     item.classList.remove('active');
   });
-  document.querySelector(`[data-server-id="${serverId}"]`).classList.add('active');
+  
+  const targetServerElement = document.querySelector(`[data-server-id="${serverId}"]`);
+  if (targetServerElement) {
+    targetServerElement.classList.add('active');
+  }
   
   currentServer = serverId;
   
@@ -315,7 +319,9 @@ function switchServer(serverId) {
   const server = servers.find(s => s.id === serverId);
   if (server) {
     const serverNameElement = document.querySelector('.server-name span');
-    serverNameElement.textContent = server.name;
+    if (serverNameElement) {
+      serverNameElement.textContent = server.name;
+    }
   }
   
   // Switch to first available channel
@@ -372,7 +378,7 @@ function updateChannelList() {
 function handleMessageSubmit(e) {
   e.preventDefault();
   
-  const message = messageInput.value.trim();
+  const message = messageInput ? messageInput.value.trim() : '';
   if (!message) return;
   
   // Add message to UI
@@ -395,7 +401,7 @@ function handleMessageSubmit(e) {
   }
   
   // Clear input
-  messageInput.value = '';
+  if (messageInput) messageInput.value = '';
 }
 
 // Add message to UI
@@ -418,8 +424,10 @@ function addMessage(messageData) {
     </div>
   `;
   
-  messagesDiv.appendChild(messageElement);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  if (messagesDiv) {
+    messagesDiv.appendChild(messageElement);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
 }
 
 // Load channel messages
@@ -440,33 +448,37 @@ function loadChannelMessages(channelId) {
 
 // Update online count
 function updateOnlineCount() {
-  const count = onlineUsers.size + 1; // +1 for current user
-  onlineCount.textContent = count;
+  if (onlineCount) {
+    const count = onlineUsers.size + 1; // +1 for current user (maybe stop?)
+    onlineCount.textContent = count;
+  }
 }
 
 // Update members list
 function updateMembersList() {
-  const members = Array.from(onlineUsers.values());
-  members.push(currentUser);
-  
-  membersList.innerHTML = members.map(member => `
-    <div class="member-item">
-      <div class="member-avatar">
-        <img src="${member.avatar}" alt="${member.username}">
-        <div class="member-status ${member.status}"></div>
+  if (membersList) {
+    const members = Array.from(onlineUsers.values());
+    members.push(currentUser);
+    
+    membersList.innerHTML = members.map(member => `
+      <div class="member-item">
+        <div class="member-avatar">
+          <img src="${member.avatar}" alt="${member.username}">
+          <div class="member-status ${member.status}"></div>
+        </div>
+        <div class="member-info">
+          <div class="member-name">${member.username}</div>
+          <div class="member-activity">Online</div>
+        </div>
       </div>
-      <div class="member-info">
-        <div class="member-name">${member.username}</div>
-        <div class="member-activity">Online</div>
-      </div>
-    </div>
-  `).join('');
+    `).join('');
+  }
 }
 
 // Server management
 function createServer() {
-  const name = serverNameInput.value.trim();
-  const description = serverDescriptionInput.value.trim();
+  const name = serverNameInput ? serverNameInput.value.trim() : '';
+  const description = serverDescriptionInput ? serverDescriptionInput.value.trim() : '';
   
   if (!name) {
     showStatus('Please enter a server name', 'error');
@@ -489,8 +501,8 @@ function createServer() {
   addServerToUI(newServer);
   
   // Clear form and hide modal
-  serverNameInput.value = '';
-  serverDescriptionInput.value = '';
+  if (serverNameInput) serverNameInput.value = '';
+  if (serverDescriptionInput) serverDescriptionInput.value = '';
   hideModal(addServerModal);
   
   showStatus(`Server "${name}" created successfully!`, 'success');
@@ -510,15 +522,17 @@ function addServerToUI(server) {
   `;
   
   // Insert before add server button
-  addServerBtn.parentNode.insertBefore(serverElement, addServerBtn);
-  
-  // Add event listener
-  serverElement.addEventListener('click', () => switchServer(server.id));
+  if (addServerBtn && addServerBtn.parentNode) {
+    addServerBtn.parentNode.insertBefore(serverElement, addServerBtn);
+    
+    // Add event listener
+    serverElement.addEventListener('click', () => switchServer(server.id));
+  }
 }
 
 // Friend system
 function addFriend() {
-  const username = friendUsernameInput.value.trim();
+  const username = friendUsernameInput ? friendUsernameInput.value.trim() : '';
   
   if (!username) {
     showStatus('Please enter a username', 'error');
@@ -541,7 +555,7 @@ function addFriend() {
   updateDirectMessages();
   
   // Clear form and hide modal
-  friendUsernameInput.value = '';
+  if (friendUsernameInput) friendUsernameInput.value = '';
   hideModal(addFriendModal);
   
   showStatus(`Friend request sent to ${username}`, 'success');
@@ -549,36 +563,42 @@ function addFriend() {
 
 // Update direct messages
 function updateDirectMessages() {
-  directMessagesList.innerHTML = friends.map(friend => `
-    <div class="channel-item" data-channel-id="dm-${friend.username}">
-      <i class="fas fa-user"></i>
-      <span>${friend.username}</span>
-    </div>
-  `).join('');
+  if (directMessagesList) {
+    directMessagesList.innerHTML = friends.map(friend => `
+      <div class="channel-item" data-channel-id="dm-${friend.username}">
+        <i class="fas fa-user"></i>
+        <span>${friend.username}</span>
+      </div>
+    `).join('');
+  }
 }
 
 // User controls
 function toggleMute() {
-  muteBtn.classList.toggle('muted');
-  const icon = muteBtn.querySelector('i');
-  if (muteBtn.classList.contains('muted')) {
-    icon.className = 'fas fa-microphone-slash';
-    showStatus('Microphone muted', 'warning');
-  } else {
-    icon.className = 'fas fa-microphone';
-    showStatus('Microphone unmuted', 'success');
+  if (muteBtn && muteBtn.classList) {
+    muteBtn.classList.toggle('muted');
+    const icon = muteBtn.querySelector('i');
+    if (icon && muteBtn.classList.contains('muted')) {
+      icon.className = 'fas fa-microphone-slash';
+      showStatus('Microphone muted', 'warning');
+    } else if (icon) {
+      icon.className = 'fas fa-microphone';
+      showStatus('Microphone unmuted', 'success');
+    }
   }
 }
 
 function toggleDeafen() {
-  deafenBtn.classList.toggle('deafened');
-  const icon = deafenBtn.querySelector('i');
-  if (deafenBtn.classList.contains('deafened')) {
-    icon.className = 'fas fa-headphones-slash';
-    showStatus('Audio disabled', 'warning');
-  } else {
-    icon.className = 'fas fa-headphones';
-    showStatus('Audio enabled', 'success');
+  if (deafenBtn && deafenBtn.classList) {
+    deafenBtn.classList.toggle('deafened');
+    const icon = deafenBtn.querySelector('i');
+    if (icon && deafenBtn.classList.contains('deafened')) {
+      icon.className = 'fas fa-headphones-slash';
+      showStatus('Audio disabled', 'warning');
+    } else if (icon) {
+      icon.className = 'fas fa-headphones';
+      showStatus('Audio enabled', 'success');
+    }
   }
 }
 
@@ -596,7 +616,9 @@ function showPinnedMessages() {
 }
 
 function toggleMembersSidebar() {
-  membersSidebar.classList.toggle('hidden');
+  if (membersSidebar && membersSidebar.classList) {
+    membersSidebar.classList.toggle('hidden');
+  }
 }
 
 function openSearch() {
@@ -605,21 +627,29 @@ function openSearch() {
 
 // Modal management
 function showModal(modal) {
-  modal.classList.add('show');
+  if (modal && modal.classList) {
+    modal.classList.add('show');
+  }
 }
 
 function hideModal(modal) {
-  modal.classList.remove('show');
+  if (modal && modal.classList) {
+    modal.classList.remove('show');
+  }
 }
 
 // Status messages
 function showStatus(message, type = 'info') {
-  statusMessageDiv.textContent = message;
-  statusMessageDiv.className = `status-message ${type} show`;
-  
-  setTimeout(() => {
-    statusMessageDiv.classList.remove('show');
-  }, 3000);
+  if (statusMessageDiv) {
+    statusMessageDiv.textContent = message;
+    statusMessageDiv.className = `status-message ${type} show`;
+    
+    setTimeout(() => {
+      if (statusMessageDiv) {
+        statusMessageDiv.classList.remove('show');
+      }
+    }, 3000);
+  }
 }
 
 // Keyboard shortcuts
@@ -649,7 +679,7 @@ function handleKeyboardShortcuts(e) {
 function loadUserPreferences() {
   // Load theme preference
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
+  if (savedTheme && document.documentElement) {
     document.documentElement.setAttribute('data-theme', savedTheme);
   }
   
