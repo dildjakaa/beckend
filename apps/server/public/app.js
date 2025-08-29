@@ -281,48 +281,61 @@ async function handleLogin(e) {
     console.log('Login response data:', data);
     console.log('Data type:', typeof data);
     console.log('Data keys:', Object.keys(data));
-    if (data.user) {
-      console.log('User data:', data.user);
-      console.log('User keys:', Object.keys(data.user));
-      console.log('User ID:', data.user.id);
-      console.log('User ID type:', typeof data.user.id);
-      console.log('Username:', data.user.username);
-      console.log('Username type:', typeof data.user.username);
+    
+    // Extract user data from the correct structure
+    let userData, tokenData;
+    
+    if (data.data && data.data.user) {
+      // New structure: {success: true, data: {user: {...}, token: "..."}}
+      userData = data.data.user;
+      tokenData = data.data.token;
+      console.log('Using data.data structure');
+    } else if (data.user) {
+      // Old structure: {user: {...}, token: "..."}
+      userData = data.user;
+      tokenData = data.token;
+      console.log('Using direct data structure');
+    } else {
+      console.error('Unexpected response structure:', data);
+      throw new Error('Unexpected response structure from server');
     }
     
-    // Validate response structure
-    if (!data.user) {
-      console.error('No user data in response:', data);
+    console.log('Extracted user data:', userData);
+    console.log('Extracted token:', tokenData);
+    
+    // Validate user data structure
+    if (!userData) {
+      console.error('No user data found in response');
       throw new Error('No user data received from server');
     }
     
-    if (data.user.id === null || data.user.id === undefined || data.user.id === '') {
-      console.error('Invalid user ID in response:', data.user.id);
+    if (userData.id === null || userData.id === undefined || userData.id === '') {
+      console.error('Invalid user ID in response:', userData.id);
       throw new Error('Invalid user ID received from server');
     }
     
-    if (!data.user.username || data.user.username === null || data.user.username === undefined || data.user.username === '') {
-      console.error('Invalid username in response:', data.user.username);
+    if (!userData.username || userData.username === null || userData.username === undefined || userData.username === '') {
+      console.error('Invalid username in response:', userData.username);
       throw new Error('Invalid username received from server');
     }
     
-    // Store user data and token
+    // Store user data
     currentUser = {
-      id: data.user.id,
-      username: data.user.username,
-      avatar: data.user.avatar_url || generateAvatar(data.user.username),
+      id: userData.id,
+      username: userData.username,
+      avatar: userData.avatar_url || generateAvatar(userData.username),
       status: 'online'
     };
     
     // Store token for socket authentication
-    console.log('Token received:', data.token);
-    if (data.token) {
-      localStorage.setItem('authToken', data.token);
+    console.log('Token received:', tokenData);
+    if (tokenData) {
+      localStorage.setItem('authToken', tokenData);
       console.log('Token saved to localStorage');
       
       // Authenticate with socket
       if (socket && isConnected) {
-        socket.emit('authenticate_with_token', { token: data.token });
+        socket.emit('authenticate_with_token', { token: tokenData });
         console.log('Socket authentication sent');
       } else {
         console.log('Socket not available or not connected');
