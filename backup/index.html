@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KrackenX Messenger</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://api.dicebear.com data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self' ws: wss: https:; media-src 'self' data:; object-src 'none'; base-uri 'self'">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-right">
+                <div id="userInfo" class="user-info"></div>
+            </div>
+        </header>
+
+        <!-- Login Form (shown initially) -->
+        <div id="loginContainer" class="login-container">
+            <div class="auth-container">
+                <!-- Welcome Section -->
+                <div class="welcome-section">
+                    <img src="logo.png" alt="KrackenX" class="welcome-logo">
+                    <h1>Добро пожаловать</h1>
+                    <p>Быстрый и безопасный мессенджер</p>
+                </div>
+
+                <!-- Auth Forms Container -->
+                <div class="auth-forms">
+                    <!-- Login Form (Email + Password) -->
+                    <form id="loginForm" class="auth-form">
+                        <h2>Войти по email</h2>
+                        <div class="form-group">
+                            <label for="loginEmail">Email:</label>
+                            <input type="email" id="loginEmail" name="email" required 
+                                   placeholder="Введите email">
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Пароль:</label>
+                            <input type="password" id="loginPassword" name="password" required 
+                                   placeholder="Введите пароль">
+                        </div>
+                        <button type="submit" class="btn-primary">Войти</button>
+                        
+                        <!-- Third-party OAuth removed -->
+                        
+                        <div class="form-footer">
+                            <p>Нет аккаунта? <a href="#" id="showRegisterBtn">Зарегистрироваться через email</a></p>
+                        </div>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="registerForm" class="auth-form" style="display: none;">
+                        <h2>Создать аккаунт через email</h2>
+                        <div class="form-group">
+                            <label for="regUsername">Имя пользователя:</label>
+                            <input type="text" id="regUsername" name="username" required minlength="3" maxlength="50" 
+                                   placeholder="Введите имя пользователя">
+                        </div>
+                        <div class="form-group">
+                            <label for="regEmail">Email:</label>
+                            <input type="email" id="regEmail" name="email" required 
+                                   placeholder="Введите ваш email">
+                        </div>
+                        <div class="form-group">
+                            <label for="regPassword">Пароль:</label>
+                            <div class="password-field">
+                                <input type="password" id="regPassword" name="password" required minlength="6" 
+                                       placeholder="Введите пароль (минимум 6 символов)">
+                                <button type="button" class="toggle-visibility" data-target="regPassword" aria-label="Показать/скрыть пароль">👁️</button>
+                            </div>
+                            <div class="password-strength" id="passwordStrength" aria-live="polite">
+                                <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                                <div class="password-strength-label" id="passwordStrengthLabel">Сила пароля: —</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPasswordConfirm">Подтвердите пароль:</label>
+                            <div class="password-field">
+                                <input type="password" id="regPasswordConfirm" name="passwordConfirm" required 
+                                       placeholder="Повторите пароль">
+                                <button type="button" class="toggle-visibility" data-target="regPasswordConfirm" aria-label="Показать/скрыть пароль">👁️</button>
+                            </div>
+                        </div>
+                        <div class="form-group" style="display:flex; gap:8px; align-items:flex-start;">
+                            <input type="checkbox" id="regTos" name="tosAccepted" required>
+                            <label for="regTos" style="margin:0;">
+                                Я подтверждаю, что ознакомился и принимаю Условия соглашения и Политику конфиденциальности.
+                                KrackenX — мессенджер с шифрованием, не следит за вами, а разработчик выжил на дошираках.
+                            </label>
+                        </div>
+                        <button type="submit" class="btn-primary">Зарегистрироваться</button>
+                        
+                        <div class="form-footer">
+                            <p>Уже есть аккаунт? <a href="#" id="showLoginBtn">Войти</a></p>
+                        </div>
+                    </form>
+
+                    <!-- Email Verification Form -->
+                    <form id="emailVerificationForm" class="auth-form" style="display: none;">
+                        <h2>Подтверждение email</h2>
+                        <div class="verification-info">
+                            <p>Мы отправили код подтверждения на <strong id="verificationEmail"></strong></p>
+                            <p>Введите код из письма:</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="verificationCode">Код подтверждения:</label>
+                            <div class="code-input-container">
+                                <input type="text" id="verificationCode" name="code" required maxlength="6" 
+                                       placeholder="000000" class="code-input">
+                                <button type="button" id="resendCodeBtn" class="btn-secondary">Отправить снова</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">Подтвердить</button>
+                        
+                        <div class="form-footer">
+                            <p><a href="#" id="backToRegisterBtn">← Назад к регистрации</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Interface (hidden initially) -->
+        <div id="chatContainer" class="chat-container" style="display: none;">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="tabs">
+                        <button id="tabChats" class="tab-btn active" aria-selected="true">Чаты</button>
+                        <button id="tabFriends" class="tab-btn" aria-selected="false">Друзья</button>
+                    </div>
+                    <button id="newChatBtn" class="new-chat-btn" title="Новый чат">+</button>
+                </div>
+                
+                <div id="chatsSection" class="chat-list">
+                    <div class="chat-item active" data-room-id="1" data-room-type="general">
+                        <div class="chat-avatar">
+                            <div class="avatar-placeholder">#</div>
+                        </div>
+                        <div class="chat-info">
+                            <div class="chat-name">General Chat</div>
+                            <div class="chat-last-message">Welcome to KrackenX!</div>
+                        </div>
+                        <div class="chat-meta">
+                            <div class="unread-count" style="display: none;">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="friendsSection" class="friends-section" style="display: none;">
+                    <div class="friends-actions">
+                        <button id="addFriendBtn" class="btn-secondary" title="Добавить друга">Добавить друга</button>
+                    </div>
+                    <div id="friendsList" class="users-list"></div>
+                </div>
+
+                <div class="online-users">
+                    <h4>Online Users</h4>
+                    <div id="onlineUsersList" class="users-list"></div>
+                </div>
+            </aside>
+
+            <!-- Main Chat Area -->
+            <main class="main-chat">
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <div class="chat-header-avatar">
+                            <div class="avatar-placeholder">#</div>
+                        </div>
+                        <div class="chat-header-details">
+                            <h3 id="currentChatName">General Chat</h3>
+                            <p id="currentChatStatus">Public room</p>
+                        </div>
+                    </div>
+                    <div class="chat-header-actions">
+                        <!-- Settings button removed -->
+                    </div>
+                </div>
+
+                <!-- Messages Display -->
+                <div id="messagesContainer" class="messages-container">
+                    <div id="messages" class="messages"></div>
+                </div>
+
+                <!-- Message Input Form -->
+                <form id="messageForm" class="message-form">
+                    <div class="input-group">
+                        <button type="button" id="attachBtn" class="attachment-btn" title="Attach file">📎</button>
+                        <input type="text" id="messageInput" placeholder="Введите сообщение..." 
+                               maxlength="1000" autocomplete="off">
+                        <button type="button" id="emojiBtn" class="emoji-btn" title="Emoji">😊</button>
+                        <button type="submit" id="sendBtn" class="send-btn">
+                            <span class="send-icon">➤</span>
+                        </button>
+                    </div>
+                </form>
+            </main>
+        </div>
+
+        <!-- Status/Error Messages -->
+        <div id="statusMessage" class="status-message"></div>
+        
+        <!-- Mobile Overlay removed -->
+        
+        <!-- Chat Invitation Modal -->
+        <div id="invitationModal" class="invitation-modal">
+            <div class="invitation-content">
+                <div class="invitation-header">
+                    <div id="invitationAvatar" class="invitation-avatar"></div>
+                    <h3 id="invitationTitle" class="invitation-title">Приглашение в приватный чат</h3>
+                    <p id="invitationMessage" class="invitation-message"></p>
+                </div>
+                <div class="invitation-actions">
+                    <button id="acceptInvitationBtn" class="invitation-btn accept">
+                        <span>✓</span> Зайти
+                    </button>
+                    <button id="declineInvitationBtn" class="invitation-btn decline">
+                        <span>✗</span> Отказаться
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Invitation Notification Toast -->
+        <div id="invitationNotification" class="invitation-notification">
+            <div class="invitation-notification-content">
+                <div id="invitationNotificationAvatar" class="invitation-notification-avatar"></div>
+                <div class="invitation-notification-text">
+                    <div id="invitationNotificationTitle" class="invitation-notification-title">Новое приглашение</div>
+                    <div id="invitationNotificationMessage" class="invitation-notification-message"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO Client Library -->
+    <script src="/socket.io/socket.io.js" defer></script>
+    <!-- Main Application Script (cache-busted) -->
+    <script src="app.js?v=20250829" defer></script>
+    
+</body>
+</html>
