@@ -82,6 +82,24 @@ const settingsBtn = document.getElementById('settingsBtn');
 // Header controls
 const addFriendBtn = document.getElementById('addFriendBtn');
 
+// Mobile interface elements
+const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+const mobileFriendsView = document.getElementById('mobileFriendsView');
+const mobileServersView = document.getElementById('mobileServersView');
+const mobileAddFriendBtn = document.getElementById('mobileAddFriendBtn');
+const mobileAddServerBtn = document.getElementById('mobileAddServerBtn');
+const mobileAddServerBtn2 = document.getElementById('mobileAddServerBtn2');
+
+// Friends system elements
+const friendsList = document.getElementById('friendsList');
+const friendRequestsList = document.getElementById('friendRequestsList');
+const friendTabs = document.querySelectorAll('.friend-tab');
+const friendRequestModal = document.getElementById('friendRequestModal');
+const requestUserAvatar = document.getElementById('requestUserAvatar');
+const requestUsername = document.getElementById('requestUsername');
+const acceptFriendBtn = document.getElementById('acceptFriendBtn');
+const rejectFriendBtn = document.getElementById('rejectFriendBtn');
+
 // Server and channel elements
 const serverMenuBtn = document.getElementById('serverMenuBtn');
 const addServerBtn = document.getElementById('addServerBtn');
@@ -476,6 +494,12 @@ function showChatInterface() {
   
   if (loginContainer) loginContainer.style.display = 'none';
   if (chatContainer) chatContainer.style.display = 'flex';
+  
+  // Load friends and friend requests
+  if (currentUser.id) {
+    loadFriends();
+    loadFriendRequests();
+  }
 }
 
 // Show login interface
@@ -751,21 +775,8 @@ function addFriend() {
     return;
   }
   
-  // Add to friends list
-  friends.push({
-    username: username,
-    avatar: generateAvatar(username),
-    status: 'offline'
-  });
-  
-  // Update direct messages
-  updateDirectMessages();
-  
-  // Clear form and hide modal
-  if (friendUsernameInput) friendUsernameInput.value = '';
-  hideModal(addFriendModal);
-  
-  showStatus(`Friend request sent to ${username}`, 'success');
+  // Send friend request using API
+  sendFriendRequest(username);
 }
 
 // Update direct messages
@@ -826,6 +837,14 @@ function hideModal(modal) {
   if (modal && modal.classList) {
     modal.classList.remove('show');
   }
+}
+
+function openModal(modal) {
+  showModal(modal);
+}
+
+function closeModal(modal) {
+  hideModal(modal);
 }
 
 // Status messages
@@ -995,6 +1014,44 @@ socket.on('reconnect_failed', () => {
   showStatus('Failed to reconnect to server', 'error');
 });
 
+// Friend request notifications
+socket.on('friend_request_received', (data) => {
+    console.log('Friend request received:', data);
+    
+    // Update the friend request modal
+    if (requestUsername) requestUsername.textContent = data.fromUsername;
+    if (requestUserAvatar) {
+        if (data.fromAvatar) {
+            requestUserAvatar.innerHTML = `<img src="${data.fromAvatar}" alt="${data.fromUsername}">`;
+        } else {
+            requestUserAvatar.innerHTML = `<span>${data.fromUsername.charAt(0).toUpperCase()}</span>`;
+        }
+    }
+    
+    // Store the request data for accept/reject
+    const requestId = data.requestId; // This should come from the server
+    
+    // Show the modal
+    openModal(friendRequestModal);
+    
+    // Set up accept/reject handlers
+    if (acceptFriendBtn) {
+        acceptFriendBtn.onclick = () => {
+            respondToFriendRequest(requestId, 'accepted');
+            closeModal(friendRequestModal);
+        };
+    }
+    
+    if (rejectFriendBtn) {
+        rejectFriendBtn.onclick = () => {
+            respondToFriendRequest(requestId, 'rejected');
+            closeModal(friendRequestModal);
+        };
+    }
+    
+    showStatus(`Friend request from ${data.fromUsername}!`, 'info');
+});
+
 // Test server connection function
 async function testServerConnection() {
   try {
@@ -1031,5 +1088,312 @@ async function testServerConnection() {
 // Test connection on page load
 document.addEventListener('DOMContentLoaded', () => {
   testServerConnection();
+});
+
+// Friends System Functions
+async function sendFriendRequest(username) {
+    try {
+        const response = await fetch(`${SERVER_URL}/api/friends/send-request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                fromUserId: currentUser.id,
+                toUsername: username
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus('Friend request sent successfully!', 'success');
+            closeModal(addFriendModal);
+            friendUsernameInput.value = '';
+            
+            // Emit socket event to notify server
+            if (socket && socket.connected) {
+                socket.emit('friend_request_sent', { toUsername: username });
+            }
+        } else {
+            showStatus(data.message || 'Failed to send friend request', 'error');
+        }
+    } catch (error) {
+        console.error('Error sending friend request:', error);
+        showStatus('Failed to send friend request', 'error');
+    }
+}
+
+async function loadFriends() {
+    try {
+        const response = await fetch(`${SERVER_URL}/api/friends/list/${currentUser.id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            friends = data.data.friends;
+            renderFriendsList();
+        }
+    } catch (error) {
+        console.error('Error loading friends:', error);
+    }
+}
+
+async function loadFriendRequests() {
+    try {
+        const response = await fetch(`${SERVER_URL}/api/friends/requests/${currentUser.id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            friendRequests = data.data.requests;
+            renderFriendRequestsList();
+        }
+    } catch (error) {
+        console.error('Error loading friend requests:', error);
+    }
+}
+
+function renderFriendsList() {
+    if (!friendsList) return;
+    
+    friendsList.innerHTML = '';
+    
+    if (friends.length === 0) {
+        friendsList.innerHTML = '<p class="no-friends">No friends yet. Add some friends to get started!</p>';
+        return;
+    }
+    
+    friends.forEach(friend => {
+        const friendItem = document.createElement('div');
+        friendItem.className = 'friend-item';
+        
+        const avatar = friend.avatar_url || generateAvatar(friend.username);
+        const status = friend.status || 'offline';
+        
+        friendItem.innerHTML = `
+            <div class="friend-avatar">
+                ${friend.avatar_url ? `<img src="${friend.avatar_url}" alt="${friend.username}">` : `<span>${friend.username.charAt(0).toUpperCase()}</span>`}
+            </div>
+            <div class="friend-info">
+                <div class="friend-name">${friend.username}</div>
+                <div class="friend-status ${status}">${status}</div>
+            </div>
+            <div class="friend-actions">
+                <button class="friend-action-btn primary" onclick="openDirectMessage(${friend.friend_id}, '${friend.username}')">
+                    <i class="fas fa-comment"></i>
+                </button>
+                <button class="friend-action-btn" onclick="removeFriend(${friend.friend_id})">
+                    <i class="fas fa-user-minus"></i>
+                </button>
+            </div>
+        `;
+        
+        friendsList.appendChild(friendItem);
+    });
+}
+
+function renderFriendRequestsList() {
+    if (!friendRequestsList) return;
+    
+    friendRequestsList.innerHTML = '';
+    
+    if (friendRequests.length === 0) {
+        friendRequestsList.innerHTML = '<p class="no-requests">No pending friend requests</p>';
+        return;
+    }
+    
+    friendRequests.forEach(request => {
+        const requestItem = document.createElement('div');
+        requestItem.className = 'friend-request-item';
+        
+        const avatar = request.avatar_url || generateAvatar(request.username);
+        const timeAgo = getTimeAgo(new Date(request.created_at));
+        
+        requestItem.innerHTML = `
+            <div class="request-avatar">
+                ${request.avatar_url ? `<img src="${request.avatar_url}" alt="${request.username}">` : `<span>${request.username.charAt(0).toUpperCase()}</span>`}
+            </div>
+            <div class="request-info">
+                <div class="request-name">${request.username}</div>
+                <div class="request-time">${timeAgo}</div>
+            </div>
+            <div class="request-actions">
+                <button class="request-action-btn primary" onclick="respondToFriendRequest(${request.id}, 'accepted')">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="request-action-btn danger" onclick="respondToFriendRequest(${request.id}, 'rejected')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        friendRequestsList.appendChild(requestItem);
+    });
+}
+
+async function respondToFriendRequest(requestId, response) {
+    try {
+        const res = await fetch(`${SERVER_URL}/api/friends/respond-request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                requestId: requestId,
+                response: response,
+                userId: currentUser.id
+            })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+            showStatus(`Friend request ${response}`, 'success');
+            await loadFriendRequests();
+            await loadFriends();
+        } else {
+            showStatus(data.message || 'Failed to respond to friend request', 'error');
+        }
+    } catch (error) {
+        console.error('Error responding to friend request:', error);
+        showStatus('Failed to respond to friend request', 'error');
+    }
+}
+
+function openDirectMessage(friendId, friendUsername) {
+    // Switch to chat view
+    showMobileView('chat');
+    
+    // Create or open direct message channel
+    const channelId = `dm-${Math.min(currentUser.id, friendId)}-${Math.max(currentUser.id, friendId)}`;
+    
+    // Update UI to show DM
+    currentChannel = channelId;
+    currentChannelName.textContent = friendUsername;
+    channelTopic.textContent = `Direct message with ${friendUsername}`;
+    
+    // Join the DM room
+    socket.emit('join_room', { roomId: channelId, roomType: 'direct' });
+    
+    // Load messages for this DM
+    loadMessages(channelId);
+}
+
+// Mobile Interface Functions
+function showMobileView(view) {
+    // Hide all mobile views
+    document.querySelectorAll('.mobile-view').forEach(v => v.style.display = 'none');
+    
+    // Show selected view
+    if (view === 'friends') {
+        mobileFriendsView.style.display = 'block';
+        loadFriends();
+        loadFriendRequests();
+    } else if (view === 'servers') {
+        mobileServersView.style.display = 'block';
+    }
+    
+    // Update navigation buttons
+    mobileNavBtns.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.view === view) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+function initializeMobileInterface() {
+    // Mobile navigation
+    mobileNavBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const view = btn.dataset.view;
+            showMobileView(view);
+        });
+    });
+    
+    // Mobile friend tabs
+    friendTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            friendTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            if (tab.dataset.tab === 'friends') {
+                friendsList.style.display = 'block';
+                friendRequestsList.style.display = 'none';
+            } else {
+                friendsList.style.display = 'none';
+                friendRequestsList.style.display = 'block';
+            }
+        });
+    });
+    
+    // Mobile add friend button
+    if (mobileAddFriendBtn) {
+        mobileAddFriendBtn.addEventListener('click', () => {
+            openModal(addFriendModal);
+        });
+    }
+    
+    // Mobile add server buttons
+    if (mobileAddServerBtn) {
+        mobileAddServerBtn.addEventListener('click', () => {
+            openModal(addServerModal);
+        });
+    }
+    
+    if (mobileAddServerBtn2) {
+        mobileAddServerBtn2.addEventListener('click', () => {
+            openModal(addServerModal);
+        });
+    }
+}
+
+// Utility Functions
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+}
+
+function removeFriend(friendId) {
+    if (confirm('Are you sure you want to remove this friend?')) {
+        // TODO: Implement remove friend API
+        showStatus('Friend removed', 'success');
+        loadFriends();
+    }
+}
+
+// Load messages for a specific channel
+async function loadMessages(channelId) {
+    try {
+        // Clear existing messages
+        if (messagesDiv) messagesDiv.innerHTML = '';
+        
+        // Load messages from server (this would need to be implemented on the server side)
+        // For now, we'll just show a placeholder
+        if (messagesDiv) {
+            messagesDiv.innerHTML = '<div class="message system-message">Loading messages...</div>';
+        }
+        
+        // TODO: Implement actual message loading from server
+        // const response = await fetch(`${SERVER_URL}/api/messages/${channelId}`);
+        // const data = await response.json();
+        // if (data.success) {
+        //     data.messages.forEach(msg => addMessage(msg));
+        // }
+    } catch (error) {
+        console.error('Error loading messages:', error);
+        if (messagesDiv) {
+            messagesDiv.innerHTML = '<div class="message system-message error">Failed to load messages</div>';
+        }
+    }
+}
+
+// Initialize mobile interface when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    initializeMobileInterface();
 });
 

@@ -41,30 +41,95 @@
 
         <!-- Main Discord-like Interface (hidden initially) -->
         <div id="chatContainer" class="chat-container" style="display: none;">
-            <!-- Server List Sidebar (Left) -->
-            <div class="server-list">
-                <div class="server-item home-server active" data-server-id="home">
-                    <div class="server-icon">
-                        <i class="fas fa-home"></i>
-                    </div>
-                    <div class="server-tooltip">Home</div>
+            <!-- Mobile Navigation Bar -->
+            <div class="mobile-nav">
+                <button class="mobile-nav-btn active" data-view="chat">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </button>
+                <button class="mobile-nav-btn" data-view="friends">
+                    <i class="fas fa-users"></i>
+                    <span>Friends</span>
+                </button>
+                <button class="mobile-nav-btn" data-view="servers">
+                    <i class="fas fa-server"></i>
+                    <span>Servers</span>
+                </button>
+            </div>
+
+            <!-- Mobile Friends View -->
+            <div id="mobileFriendsView" class="mobile-view" style="display: none;">
+                <div class="mobile-header">
+                    <h2>Friends</h2>
+                    <button class="mobile-header-btn" id="mobileAddFriendBtn">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
                 </div>
                 
-                <div class="server-separator"></div>
+                <div class="friends-tabs">
+                    <button class="friend-tab active" data-tab="friends">Friends</button>
+                    <button class="friend-tab" data-tab="requests">Requests</button>
+                </div>
                 
-
-                
-
-                
-                <div class="server-separator"></div>
-                
-                <div class="server-item add-server" id="addServerBtn">
-                    <div class="server-icon">
-                        <i class="fas fa-plus"></i>
+                <div class="friends-content">
+                    <div id="friendsList" class="friends-list">
+                        <!-- Friends will be populated here -->
                     </div>
-                    <div class="server-tooltip">Add Server</div>
+                    
+                    <div id="friendRequestsList" class="friend-requests-list" style="display: none;">
+                        <!-- Friend requests will be populated here -->
+                    </div>
                 </div>
             </div>
+
+            <!-- Mobile Servers View -->
+            <div id="mobileServersView" class="mobile-view" style="display: none;">
+                <div class="mobile-header">
+                    <h2>Servers</h2>
+                    <button class="mobile-header-btn" id="mobileAddServerBtn">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                <div class="mobile-servers-list">
+                    <div class="server-item home-server active" data-server-id="home">
+                        <div class="server-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <span>Home</span>
+                    </div>
+                    
+                    <div class="server-item add-server" id="mobileAddServerBtn2">
+                        <div class="server-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <span>Add Server</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desktop Interface (hidden on mobile) -->
+            <div class="desktop-interface">
+                <!-- Server List Sidebar (Left) -->
+                <div class="server-list">
+                    <div class="server-item home-server active" data-server-id="home">
+                        <div class="server-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="server-tooltip">Home</div>
+                    </div>
+                    
+                    <div class="server-separator"></div>
+                    
+                    <div class="server-separator"></div>
+                    
+                    <div class="server-item add-server" id="addServerBtn">
+                        <div class="server-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="server-tooltip">Add Server</div>
+                    </div>
+                </div>
 
             <!-- Channel List Sidebar (Middle) -->
             <div class="channel-sidebar">
@@ -183,6 +248,7 @@
                     <!-- Members will be populated here -->
                 </div>
             </div>
+            </div> <!-- End of desktop-interface -->
         </div>
 
         <!-- Modals -->
@@ -224,6 +290,30 @@
                 <div class="modal-actions">
                     <button class="btn-secondary" id="addFriendCancelBtn">Cancel</button>
                     <button class="btn-primary" id="addFriendConfirmBtn">Add Friend</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Friend Request Notification Modal -->
+        <div id="friendRequestModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Friend Request</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="friend-request-info">
+                        <div class="friend-request-avatar">
+                            <img src="" alt="User Avatar" id="requestUserAvatar">
+                        </div>
+                        <div class="friend-request-details">
+                            <h4 id="requestUsername">Username</h4>
+                            <p>wants to be your friend!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="rejectFriendBtn">Decline</button>
+                    <button class="btn-primary" id="acceptFriendBtn">Accept</button>
                 </div>
             </div>
         </div>

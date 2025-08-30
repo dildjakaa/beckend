@@ -36,6 +36,12 @@ const adminDeleteUsersHandler = require('./api/admin/delete-users.js');
 const adminDeleteMessagesHandler = require('./api/admin/delete-messages.js');
 const adminSendSupportMessageHandler = require('./api/admin/send-support-message.js');
 
+// Friends API handlers
+const sendFriendRequestHandler = require('./api/friends/send-request.js');
+const respondToFriendRequestHandler = require('./api/friends/respond-request.js');
+const getFriendRequestsHandler = require('./api/friends/get-requests.js');
+const getFriendsHandler = require('./api/friends/get-friends.js');
+
 // Store connected users
 const connectedUsers = new Map();
 const userRooms = new Map();
@@ -48,6 +54,7 @@ const pendingInvitations = new Map();
 // Ensure required tables exist (friends system)
 async function ensureAuxTables() {
     try {
+        // Create friends table
         await query(`
             CREATE TABLE IF NOT EXISTS friends (
                 id SERIAL PRIMARY KEY,
@@ -55,13 +62,33 @@ async function ensureAuxTables() {
                 friend_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 status VARCHAR(20) NOT NULL DEFAULT 'pending',
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, friend_id)
             );
         `, []);
-        // Optional helper index
+        
+        // Create friend requests table
+        await query(`
+            CREATE TABLE IF NOT EXISTS friend_requests (
+                id SERIAL PRIMARY KEY,
+                from_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                to_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(from_user_id, to_user_id)
+            );
+        `, []);
+        
+        // Create indexes for better performance
         await query(`CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);`, []);
+        await query(`CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);`, []);
+        await query(`CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status);`, []);
+        await query(`CREATE INDEX IF NOT EXISTS idx_friend_requests_to_user_id ON friend_requests(to_user_id);`, []);
+        await query(`CREATE INDEX IF NOT EXISTS idx_friend_requests_status ON friend_requests(status);`, []);
+        
+        console.log('✅ Friends system tables and indexes created/verified');
     } catch (e) {
-        console.error('Failed to ensure friends table:', e);
+        console.error('Failed to ensure friends tables:', e);
     }
 }
 
@@ -103,6 +130,36 @@ async function getOrCreateDirectRoom(userIdA, userIdB) {
         [roomId, maxId]
     );
     return { id: roomId, name: roomName };
+}
+
+// Send friend request notification via Socket.IO
+async function sendFriendRequestNotification(fromUserId, toUserId) {
+    try {
+        // Get user information
+        const fromUser = await query(
+            'SELECT username, avatar_url FROM users WHERE id = $1',
+            [fromUserId]
+        );
+        
+        if (fromUser.rows.length === 0) return;
+        
+        const userData = fromUser.rows[0];
+        
+        // Find the socket of the recipient
+        const recipientSocket = Array.from(connectedUsers.values())
+            .find(user => user.userId === toUserId);
+        
+        if (recipientSocket) {
+            io.to(recipientSocket.socketId).emit('friend_request_received', {
+                fromUserId: fromUserId,
+                fromUsername: userData.username,
+                fromAvatar: userData.avatar_url,
+                timestamp: new Date()
+            });
+        }
+    } catch (error) {
+        console.error('Error sending friend request notification:', error);
+    }
 }
 
 // Helper function to broadcast online users
@@ -155,6 +212,12 @@ app.post('/api/admin/clear-logs', adminClearLogsHandler);
 app.post('/api/admin/delete-users', adminDeleteUsersHandler);
 app.post('/api/admin/delete-messages', adminDeleteMessagesHandler);
 app.post('/api/admin/send-support-message', adminSendSupportMessageHandler);
+
+// Friends routes
+app.post('/api/friends/send-request', sendFriendRequestHandler);
+app.post('/api/friends/respond-request', respondToFriendRequestHandler);
+app.get('/api/friends/requests/:userId', getFriendRequestsHandler);
+app.get('/api/friends/list/:userId', getFriendsHandler);
 
 // GitHub OAuth endpoint
 app.get('/api/auth/github', (req, res) => {
@@ -1014,6 +1077,32 @@ io.on('connection', (socket) => {
         } catch (error) {
             console.error('Error saving message:', error);
             socket.emit('error', { message: 'Failed to send message' });
+        }
+    });
+    
+    socket.on('friend_request_sent', async (data) => {
+        if (!socket.userId) {
+            socket.emit('error', { message: 'Not authenticated' });
+            return;
+        }
+        
+        try {
+            const { toUsername } = data;
+            
+            // Get the recipient user ID
+            const recipientResult = await query(
+                'SELECT id FROM users WHERE username = $1',
+                [toUsername]
+            );
+            
+            if (recipientResult.rows.length > 0) {
+                const toUserId = recipientResult.rows[0].id;
+                
+                // Send notification to the recipient
+                await sendFriendRequestNotification(socket.userId, toUserId);
+            }
+        } catch (error) {
+            console.error('Error handling friend request sent:', error);
         }
     });
     
