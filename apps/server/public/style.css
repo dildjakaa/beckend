@@ -1401,11 +1401,11 @@ body {
 /* Enhanced Mobile Responsiveness */
 @media (max-width: 768px) {
   .desktop-interface {
-    display: none;
+    display: none !important;
   }
   
   .mobile-nav {
-    display: flex;
+    display: flex !important;
   }
   
   .chat-container {
@@ -1419,6 +1419,46 @@ body {
   /* Show chat view by default on mobile */
   #mobileChatView {
     display: block;
+  }
+}
+
+/* Desktop Interface Styles */
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none;
+  }
+  
+  .mobile-view {
+    display: none;
+  }
+  
+  .desktop-interface {
+    display: flex;
+  }
+  
+  .chat-container {
+    padding-bottom: 0;
+  }
+  
+  /* Ensure proper sizing for desktop */
+  .server-list {
+    width: 72px;
+    min-width: 72px;
+  }
+  
+  .channel-sidebar {
+    width: 240px;
+    min-width: 240px;
+  }
+  
+  .members-sidebar {
+    width: 240px;
+    min-width: 240px;
+  }
+  
+  .main-chat {
+    flex: 1;
+    min-width: 0;
   }
 }
 

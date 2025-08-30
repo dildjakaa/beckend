@@ -495,6 +495,11 @@ function showChatInterface() {
   if (loginContainer) loginContainer.style.display = 'none';
   if (chatContainer) chatContainer.style.display = 'flex';
   
+  // Initialize interface based on device
+  if (isMobileDevice()) {
+    showMobileView('chat');
+  }
+  
   // Load friends and friend requests
   if (currentUser.id) {
     loadFriends();
@@ -1104,6 +1109,21 @@ async function sendFriendRequest(username) {
             })
         });
 
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.warn(`Failed to send friend request: ${response.status} ${response.statusText}`);
+            console.warn('Response:', errorText);
+            
+            // Try to parse as JSON for better error messages
+            try {
+                const errorData = JSON.parse(errorText);
+                showStatus(errorData.message || 'Failed to send friend request', 'error');
+            } catch {
+                showStatus('Failed to send friend request', 'error');
+            }
+            return;
+        }
+
         const data = await response.json();
         
         if (data.success) {
@@ -1127,6 +1147,12 @@ async function sendFriendRequest(username) {
 async function loadFriends() {
     try {
         const response = await fetch(`${SERVER_URL}/api/friends/list/${currentUser.id}`);
+        
+        if (!response.ok) {
+            console.warn(`Failed to load friends: ${response.status} ${response.statusText}`);
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -1135,12 +1161,19 @@ async function loadFriends() {
         }
     } catch (error) {
         console.error('Error loading friends:', error);
+        // Don't show error to user for non-critical features
     }
 }
 
 async function loadFriendRequests() {
     try {
         const response = await fetch(`${SERVER_URL}/api/friends/requests/${currentUser.id}`);
+        
+        if (!response.ok) {
+            console.warn(`Failed to load friend requests: ${response.status} ${response.statusText}`);
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -1149,6 +1182,7 @@ async function loadFriendRequests() {
         }
     } catch (error) {
         console.error('Error loading friend requests:', error);
+        // Don't show error to user for non-critical features
     }
 }
 
@@ -1392,8 +1426,19 @@ async function loadMessages(channelId) {
     }
 }
 
+// Device detection
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           window.innerWidth <= 768;
+}
+
 // Initialize mobile interface when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeMobileInterface();
+    
+    // Show appropriate interface based on device
+    if (isMobileDevice()) {
+        showMobileView('chat');
+    }
 });
 

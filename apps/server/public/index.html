@@ -131,123 +131,125 @@
                     </div>
                 </div>
 
-            <!-- Channel List Sidebar (Middle) -->
-            <div class="channel-sidebar">
-                <div class="server-header">
-                    <div class="server-name">
-                        <i class="fas fa-home"></i>
-                        <span>Kracken Home</span>
-                    </div>
-                    <button class="server-menu-btn" id="serverMenuBtn">
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                </div>
-
-                <div class="channel-categories">
-                    <!-- Text Channels -->
-                    <div class="channel-category">
-                        <div class="category-header">
-                            <i class="fas fa-chevron-down"></i>
-                            <span>TEXT CHANNELS</span>
+                <!-- Channel List Sidebar (Middle) -->
+                <div class="channel-sidebar">
+                    <div class="server-header">
+                        <div class="server-name">
+                            <i class="fas fa-home"></i>
+                            <span>Kracken Home</span>
                         </div>
-                        <div class="channel-list">
-                            <div class="channel-item active" data-channel-id="general">
-                                <i class="fas fa-hashtag"></i>
-                                <span>general</span>
+                        <button class="server-menu-btn" id="serverMenuBtn">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+
+                    <div class="channel-categories">
+                        <!-- Text Channels -->
+                        <div class="channel-category">
+                            <div class="category-header">
+                                <i class="fas fa-chevron-down"></i>
+                                <span>TEXT CHANNELS</span>
                             </div>
+                            <div class="channel-list">
+                                <div class="channel-item active" data-channel-id="general">
+                                    <i class="fas fa-hashtag"></i>
+                                    <span>general</span>
+                                </div>
+                            </div>
+                        </div>
 
+                        <!-- Direct Messages -->
+                        <div class="channel-category">
+                            <div class="category-header">
+                                <i class="fas fa-chevron-down"></i>
+                                <span>DIRECT MESSAGES</span>
+                            </div>
+                            <div class="channel-list" id="directMessagesList">
+                                <!-- Direct messages will be populated here -->
+                            </div>
                         </div>
                     </div>
 
-
-
-                    <!-- Direct Messages -->
-                    <div class="channel-category">
-                        <div class="category-header">
-                            <i class="fas fa-chevron-down"></i>
-                            <span>DIRECT MESSAGES</span>
+                    <!-- User Info Panel -->
+                    <div class="user-panel">
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                <img src="" alt="User Avatar" id="userAvatar">
+                            </div>
+                            <div class="user-details">
+                                <div class="username" id="userDisplayName">Username</div>
+                                <div class="user-status" id="userStatus">Online</div>
+                            </div>
                         </div>
-                        <div class="channel-list" id="directMessagesList">
-                            <!-- Direct messages will be populated here -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Info Panel -->
-                <div class="user-panel">
-                    <div class="user-info">
-                        <div class="user-avatar">
-                            <img src="" alt="User Avatar" id="userAvatar">
-                        </div>
-                        <div class="user-details">
-                            <div class="username" id="userDisplayName">Username</div>
-                            <div class="user-status" id="userStatus">Online</div>
-                        </div>
-                    </div>
-                    <div class="user-controls">
-                        <button class="control-btn" id="muteBtn" title="Mute">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                        <button class="control-btn" id="deafenBtn" title="Deafen">
-                            <i class="fas fa-headphones"></i>
-                        </button>
-                        <button class="control-btn" id="settingsBtn" title="User Settings">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                        <button class="control-btn" id="logoutBtn" title="Logout">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main Chat Area -->
-            <div class="main-chat">
-                <div class="chat-header">
-                    <div class="chat-header-left">
-                        <div class="channel-info">
-                            <i class="fas fa-hashtag"></i>
-                            <h2 id="currentChannelName">general</h2>
-                        </div>
-                        <div class="channel-topic" id="channelTopic">General discussion and announcements</div>
-                    </div>
-                    <div class="chat-header-right">
-                        <div class="header-controls">
-                            <button class="header-btn" id="addFriendBtn" title="Add Friend">
-                                <i class="fas fa-user-plus"></i>
-                                <span>Add Friend</span>
+                        <div class="user-controls">
+                            <button class="control-btn" id="muteBtn" title="Mute">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="control-btn" id="deafenBtn" title="Deafen">
+                                <i class="fas fa-headphones"></i>
+                            </button>
+                            <button class="control-btn" id="settingsBtn" title="User Settings">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                            <button class="control-btn" id="logoutBtn" title="Logout">
+                                <i class="fas fa-sign-out-alt"></i>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Messages Display -->
-                <div class="messages-container">
-                    <div id="messages" class="messages"></div>
-                </div>
-
-                <!-- Message Input -->
-                <div class="message-input-container">
-                    <form id="messageForm" class="message-form">
-                        <div class="input-wrapper">
-                            <div class="message-input-wrapper">
-                                <input type="text" id="messageInput" placeholder="Message #general" 
-                                       maxlength="2000" autocomplete="off">
+                <!-- Main Chat Area -->
+                <div class="main-chat">
+                    <div class="chat-header">
+                        <div class="chat-header-left">
+                            <div class="channel-info">
+                                <i class="fas fa-hashtag"></i>
+                                <h2 id="currentChannelName">general</h2>
+                            </div>
+                            <div class="channel-topic" id="channelTopic">General discussion and announcements</div>
+                        </div>
+                        <div class="chat-header-right">
+                            <div class="header-controls">
+                                <button class="header-btn" id="addFriendBtn" title="Add Friend">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Add Friend</span>
+                                </button>
                             </div>
                         </div>
-                    </form>
-                </div>
-            </div>
+                    </div>
 
-            <!-- Members Sidebar (Right) -->
-            <div class="members-sidebar">
-                <div class="members-header">
-                    <h3>Online — <span id="onlineCount">0</span></h3>
+                    <!-- Messages Display -->
+                    <div class="messages-container">
+                        <div id="messages" class="messages"></div>
+                    </div>
+
+                    <!-- Message Input -->
+                    <div class="message-input-container">
+                        <form id="messageForm" class="message-form">
+                            <div class="input-wrapper">
+                                <div class="message-input-wrapper">
+                                    <input type="text" id="messageInput" placeholder="Message #general" 
+                                           maxlength="2000" autocomplete="off">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="members-list" id="membersList">
-                    <!-- Members will be populated here -->
+
+                <!-- Members Sidebar (Right) -->
+                <div class="members-sidebar">
+                    <div class="members-header">
+                        <h3>Online — <span id="onlineCount">0</span></h3>
+                    </div>
+                    <div class="members-list" id="membersList">
+                        <!-- Members will be populated here -->
+                    </div>
                 </div>
-            </div>
+            </div> <!-- End of desktop-interface -->
+
+
+
+
             </div> <!-- End of desktop-interface -->
         </div>
 
