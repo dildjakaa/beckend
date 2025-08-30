@@ -3,7 +3,6 @@ const { Pool } = require('pg');
 // Global connection pool and boot-time migration
 let pool;
 let bootMigrationPromise;
-let dbAvailable = false;
 
 async function runBootMigrations(client) {
   try {
@@ -37,39 +36,29 @@ async function runBootMigrations(client) {
       ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       ADD COLUMN IF NOT EXISTS is_oauth_user BOOLEAN DEFAULT FALSE
     `);
-    
-    dbAvailable = true;
-    console.log('✅ Database connection and migrations successful');
   } catch (err) {
-    // Log but don't rethrow - we'll handle this gracefully
+    // Log but rethrow so callers see failure and can act accordingly
     console.error('Boot migration error:', err);
-    dbAvailable = false;
-    console.log('⚠️ Database unavailable, some features will be limited');
+    throw err;
   }
 }
 
 function getPool() {
   if (!pool) {
-    try {
-      pool = new Pool({
-        connectionString: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'backend1_8r17'}`,
-        max: parseInt(process.env.DB_POOL_MAX || '5', 10),
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 15000,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      });
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'backend1_8r17'}`,
+      max: parseInt(process.env.DB_POOL_MAX || '5', 10),
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 15000,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    });
 
-      pool.on('error', (err) => {
-        console.error('Database pool error:', err);
-        dbAvailable = false;
-      });
+    pool.on('error', (err) => {
+      console.error('Database pool error:', err);
+    });
 
-      // Kick off boot migrations once, using the same pool
-      bootMigrationPromise = runBootMigrations(pool);
-    } catch (err) {
-      console.error('Failed to create database pool:', err);
-      dbAvailable = false;
-    }
+    // Kick off boot migrations once, using the same pool
+    bootMigrationPromise = runBootMigrations(pool);
   }
 
   return pool;
@@ -77,43 +66,21 @@ function getPool() {
 
 // Export query function for easy use
 async function query(text, params) {
-  if (!dbAvailable) {
-    console.warn('Database unavailable, query skipped:', text);
-    // Return a mock result to prevent crashes
-    return { rows: [], rowCount: 0 };
-  }
-  
   const client = getPool();
-  if (!client) {
-    console.warn('No database pool available, query skipped:', text);
-    return { rows: [], rowCount: 0 };
-  }
-  
   // Ensure migrations completed before any query
   if (bootMigrationPromise) {
-    try {
-      await bootMigrationPromise;
-    } catch (e) {
-      console.warn('Database migrations failed, continuing with limited functionality');
-      dbAvailable = false;
-      return { rows: [], rowCount: 0 };
-    }
+    await bootMigrationPromise.catch((e) => {
+      // Surface the error to the caller to avoid silent failures
+      throw e;
+    });
   }
-  
   try {
     const result = await client.query(text, params);
     return result;
   } catch (err) {
     console.error('Database query error:', err);
-    // Don't throw - return empty result to prevent crashes
-    return { rows: [], rowCount: 0 };
+    throw err;
   }
 }
 
-// Check if database is available
-function isDatabaseAvailable() {
-  return dbAvailable;
-}
-
-module.exports = { query, getPool, isDatabaseAvailable };
-
+module.exports = { query, getPool };

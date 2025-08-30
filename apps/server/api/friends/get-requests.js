@@ -1,4 +1,4 @@
-const { query, isDatabaseAvailable } = require('../../utils/db.js');
+const { query } = require('../../utils/db.js');
 const { sendResponse } = require('../../utils/response.js');
 
 async function getFriendRequests(req, res) {
@@ -7,14 +7,6 @@ async function getFriendRequests(req, res) {
         
         if (!userId) {
             return sendResponse(res, 400, 'Missing user ID');
-        }
-
-        // Check if database is available
-        if (!isDatabaseAvailable()) {
-            console.warn('Database unavailable, returning empty friend requests list');
-            return sendResponse(res, 200, 'Friend requests retrieved successfully (database unavailable)', {
-                requests: []
-            });
         }
 
         // Get pending friend requests for the user
@@ -37,10 +29,7 @@ async function getFriendRequests(req, res) {
         });
     } catch (error) {
         console.error('Error getting friend requests:', error);
-        // Return empty list instead of error to prevent frontend crashes
-        sendResponse(res, 200, 'Friend requests retrieved successfully (error occurred)', {
-            requests: []
-        });
+        sendResponse(res, 500, 'Internal server error');
     }
 }
 
