@@ -1092,7 +1092,7 @@ body {
   background: var(--discord-secondary);
   border-top: 1px solid var(--border-primary);
   z-index: 1000;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
 }
 
 .mobile-nav-btn {
@@ -1100,7 +1100,7 @@ body {
   background: none;
   border: none;
   color: var(--text-secondary);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1123,10 +1123,10 @@ body {
 
 .mobile-view {
   display: none;
-  height: calc(100vh - 80px);
+  height: 100vh;
   overflow-y: auto;
   background: var(--discord-primary);
-  padding-bottom: 80px;
+  padding-bottom: 0;
 }
 
 .mobile-view.active {
@@ -1137,9 +1137,10 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   background: var(--discord-secondary);
   border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
 .mobile-header h2 {
@@ -1524,15 +1525,24 @@ body {
   
   #mobileChatView {
     display: block;
+    height: calc(100vh - 60px);
+    padding-bottom: 0;
   }
   
   /* Ensure messages are visible on mobile */
   .messages-container {
     padding: var(--spacing-md);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
   
   .message-input-container {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background: var(--discord-primary);
+    border-top: 1px solid var(--border-primary);
+    position: sticky;
+    bottom: 0;
   }
   
   /* Fix mobile navigation */
@@ -1560,6 +1570,7 @@ body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    padding-bottom: var(--spacing-sm);
   }
   
   /* Fix mobile input */
@@ -1569,6 +1580,7 @@ body {
     bottom: 0;
     background: var(--discord-primary);
     border-top: 1px solid var(--border-primary);
+    margin-bottom: 0;
   }
   
   /* Hide desktop interface on mobile */
@@ -1659,7 +1671,32 @@ body {
   }
   
   .mobile-header {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
+  }
+  
+  #mobileChatView {
+    height: calc(100vh - 55px);
+  }
+  
+  .mobile-nav {
+    padding: var(--spacing-xs);
+    height: 55px;
+  }
+  
+  .mobile-nav-btn {
+    padding: var(--spacing-xs);
+    font-size: 0.7rem;
+    height: 100%;
+    justify-content: center;
+  }
+  
+  /* Ensure mobile messages take full available space */
+  #mobileChatView .messages-container {
+    padding: var(--spacing-sm);
+  }
+  
+  #mobileChatView .message-input-container {
+    padding: var(--spacing-sm);
   }
   
   .friends-content {
@@ -1690,6 +1727,30 @@ body {
   .main-chat {
     flex: 1;
     min-height: 0;
+  }
+  
+  /* Mobile chat view specific layout */
+  #mobileChatView {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+  }
+  
+  #mobileChatView .messages-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #mobileChatView .message-input-container {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    background: var(--discord-primary);
+    border-top: 1px solid var(--border-primary);
   }
   
 
