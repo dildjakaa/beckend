@@ -1374,124 +1374,11 @@ body {
   margin: 0;
 }
 
-/* Enhanced Mobile Responsiveness */
-@media (max-width: 768px) {
-  .desktop-interface {
-    display: none !important;
-  }
-  
-  .mobile-nav {
-    display: flex !important;
-  }
-  
-  .chat-container {
-    padding-bottom: 80px;
-  }
-  
-  .mobile-view.active {
-    display: block;
-  }
-  
-  /* Show chat view by default on mobile */
-  #mobileChatView {
-    display: block;
-  }
-}
 
-/* Desktop Interface Styles */
-@media (min-width: 769px) {
-  .mobile-nav {
-    display: none;
-  }
-  
-  .mobile-view {
-    display: none;
-  }
-  
-  .desktop-interface {
-    display: flex;
-  }
-  
-  .chat-container {
-    padding-bottom: 0;
-  }
-  
-  /* Ensure proper sizing for desktop */
-  .server-list {
-    width: 72px;
-    min-width: 72px;
-  }
-  
-  .channel-sidebar {
-    width: 240px;
-    min-width: 240px;
-  }
-  
-  .members-sidebar {
-    width: 240px;
-    min-width: 240px;
-  }
-  
-  .main-chat {
-    flex: 1;
-    min-width: 0;
-  }
-}
 
-@media (max-width: 480px) {
-  .channel-sidebar,
-  .members-sidebar {
-    display: none;
-  }
-  
-  .server-list {
-    width: 50px;
-  }
-  
-  .login-card {
-    padding: var(--spacing-lg);
-    margin: var(--spacing-md);
-  }
-  
-  /* Improve mobile layout */
-  .mobile-view {
-    padding: var(--spacing-md);
-  }
-  
-  .mobile-header {
-    padding: var(--spacing-md);
-  }
-  
-  .friends-content {
-    padding: var(--spacing-md);
-  }
-  
-  .friend-item,
-  .friend-request-item {
-    padding: var(--spacing-sm);
-  }
-  
-  .friend-avatar,
-  .request-avatar {
-    width: 35px;
-    height: 35px;
-  }
-  
-  .friend-request-avatar {
-    width: 50px;
-    height: 50px;
-  }
-  
-  /* Fix mobile chat layout */
-  .chat-container {
-    flex-direction: column;
-  }
-  
-  .main-chat {
-    flex: 1;
-    min-height: 0;
-  }
-}
+
+
+
 
 /* System Messages */
 .system-message {
@@ -1520,12 +1407,86 @@ body {
   padding: var(--spacing-lg);
 }
 
-/* Fix for mobile chat view */
-#mobileChatView {
-  display: block;
-  height: calc(100vh - 80px);
-  overflow-y: auto;
-  padding-bottom: 80px;
+/* Fix for desktop - hide mobile elements */
+@media (min-width: 769px) {
+  #mobileChatView {
+    display: none !important;
+  }
+}
+
+/* Fix mobile input styling */
+@media (max-width: 768px) {
+  /* Additional mobile fixes to prevent duplication issues */
+  .channel-sidebar,
+  .members-sidebar {
+    display: none;
+  }
+  
+  .server-list {
+    width: 50px;
+  }
+  
+  .login-card {
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md);
+  }
+  
+  /* Very small screen fixes */
+  .mobile-header h2 {
+    font-size: 1rem;
+  }
+  
+  .mobile-nav-btn span {
+    font-size: 0.7rem;
+  }
+  
+  .message {
+    gap: var(--spacing-sm);
+  }
+  
+  .message-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .message-text {
+    font-size: 0.8rem;
+  }
+  
+  /* Ensure proper scrolling on mobile */
+  body {
+    overflow-x: hidden;
+  }
+  
+  .app-container {
+    overflow-x: hidden;
+  }
+  
+  .chat-container {
+    overflow-x: hidden;
+  }
+  
+  .mobile-view {
+    overflow-x: hidden;
+  }
+  
+  /* Fix for mobile landscape orientation */
+  .mobile-nav {
+    padding: var(--spacing-xs);
+  }
+  
+  .mobile-nav-btn {
+    padding: var(--spacing-xs);
+  }
+  
+  .mobile-nav-btn span {
+    font-size: 0.7rem;
+  }
+  
+  #mobileChatView {
+    height: calc(100vh - 60px);
+    padding-bottom: 60px;
+  }
 }
 
 /* Ensure proper flexbox behavior */
@@ -1545,6 +1506,7 @@ body {
 @media (max-width: 768px) {
   .chat-container {
     flex-direction: column;
+    padding-bottom: 80px;
   }
   
   .mobile-view {
@@ -1553,6 +1515,15 @@ body {
     overflow-x: hidden;
     padding-left: 0;
     padding-right: 0;
+    display: none;
+  }
+  
+  .mobile-view.active {
+    display: block;
+  }
+  
+  #mobileChatView {
+    display: block;
   }
   
   /* Ensure messages are visible on mobile */
@@ -1604,6 +1575,81 @@ body {
   .desktop-interface {
     display: none !important;
   }
+  
+  /* Apply styles to mobile message input */
+  #mobileMessageInput {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    outline: none;
+    resize: none;
+    min-height: 20px;
+    max-height: 144px;
+  }
+  
+  #mobileMessageInput::placeholder {
+    color: var(--text-tertiary);
+  }
+  
+  /* Ensure mobile message form has proper styling */
+  #mobileMessageForm .message-form {
+    background: var(--discord-tertiary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-primary);
+  }
+  
+  #mobileMessageForm .input-wrapper {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+  }
+  
+  #mobileMessageForm .message-input-wrapper {
+    flex: 1;
+  }
+}
+
+/* Desktop styles - hide mobile elements */
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none !important;
+  }
+  
+  .mobile-view {
+    display: none !important;
+  }
+  
+  .desktop-interface {
+    display: flex !important; 
+  }
+  
+  .chat-container {
+    padding-bottom: 0;
+  }
+  
+  /* Ensure proper sizing for desktop */
+  .server-list {
+    width: 72px;
+    min-width: 72px;
+  }
+  
+  .channel-sidebar {
+    width: 240px;
+    min-width: 240px;
+  }
+  
+  .members-sidebar {
+    width: 240px;
+    min-width: 240px;
+  }
+  
+  .main-chat {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 /* Additional mobile fixes */
@@ -1646,102 +1692,63 @@ body {
     min-height: 0;
   }
   
-  /* Ensure mobile chat view is properly sized */
-  #mobileChatView {
-    height: calc(100vh - 80px);
+
+  
+  /* Fix mobile servers list */
+  .mobile-servers-list {
+    padding: var(--spacing-md);
     display: flex;
     flex-direction: column;
+    gap: var(--spacing-md);
+    width: 100%;
   }
   
-  #mobileChatView .messages-container {
+  .mobile-servers-list .server-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--discord-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .mobile-servers-list .server-item:hover {
+    background: var(--discord-tertiary);
+  }
+  
+  .mobile-servers-list .server-item.active {
+    background: var(--discord-accent);
+    border-color: var(--discord-accent);
+  }
+  
+  .mobile-servers-list .server-item span {
+    color: var(--text-primary);
+    font-weight: 500;
     flex: 1;
-    overflow-y: auto;
   }
   
-  #mobileChatView .message-input-container {
+  .mobile-servers-list .server-item .server-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--discord-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
     flex-shrink: 0;
   }
 }
 
-/* Fix for very small screens */
-@media (max-width: 360px) {
-  .mobile-header h2 {
-    font-size: 1rem;
-  }
-  
-  .mobile-nav-btn span {
-    font-size: 0.7rem;
-  }
-  
-  .message {
-    gap: var(--spacing-sm);
-  }
-  
-  .message-avatar {
-    width: 32px;
-    height: 32px;
-  }
-  
-  .message-text {
-    font-size: 0.8rem;
-  }
-}
 
-/* Ensure proper scrolling on mobile */
-@media (max-width: 768px) {
-  body {
-    overflow-x: hidden;
-  }
-  
-  .app-container {
-    overflow-x: hidden;
-  }
-  
-  .chat-container {
-    overflow-x: hidden;
-  }
-  
-  .mobile-view {
-    overflow-x: hidden;
-  }
-}
 
-/* Fix for mobile landscape orientation */
-@media (max-width: 768px) and (orientation: landscape) {
-  .mobile-nav {
-    padding: var(--spacing-xs);
-  }
-  
-  .mobile-nav-btn {
-    padding: var(--spacing-xs);
-  }
-  
-  .mobile-nav-btn span {
-    font-size: 0.7rem;
-  }
-  
-  #mobileChatView {
-    height: calc(100vh - 60px);
-    padding-bottom: 60px;
-  }
-}
 
-/* Fix for mobile view display */
-@media (max-width: 768px) {
-  .mobile-view {
-    display: none;
-  }
-  
-  .mobile-view.active {
-    display: block;
-  }
-  
-  #mobileChatView {
-    display: block;
-  }
-  
-  /* Ensure proper mobile layout */
-  .chat-container {
-    padding-bottom: 80px;
-  }
-}
+
+
+
+
