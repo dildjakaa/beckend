@@ -12,7 +12,7 @@ const io = new Server(server);
 
 // Global CORS middleware
 app.use((req, res, next) => {
-  if (handleCorsPreflight(req, res)) return;
+  if (handleCorsPreflight(req, res)) return; //i want a delete api/health check 
   addCorsHeaders(res);
   next();
 });

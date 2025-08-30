@@ -110,9 +110,10 @@ body {
   margin-bottom: var(--spacing-md);
 }
 
-.login-logo i {
-  font-size: 2rem;
-  color: var(--discord-accent);
+.logo-image {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
 }
 
 .login-logo h1 {
