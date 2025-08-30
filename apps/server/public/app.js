@@ -80,10 +80,7 @@ const deafenBtn = document.getElementById('deafenBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 
 // Header controls
-const notificationsBtn = document.getElementById('notificationsBtn');
-const pinsBtn = document.getElementById('pinsBtn');
-const membersBtn = document.getElementById('membersBtn');
-const searchBtn = document.getElementById('searchBtn');
+const addFriendBtn = document.getElementById('addFriendBtn');
 
 // Server and channel elements
 const serverMenuBtn = document.getElementById('serverMenuBtn');
@@ -202,10 +199,7 @@ function initializeEventListeners() {
   }
   
   // Header controls
-  notificationsBtn.addEventListener('click', toggleNotifications);
-  pinsBtn.addEventListener('click', showPinnedMessages);
-  membersBtn.addEventListener('click', toggleMembersSidebar);
-  searchBtn.addEventListener('click', openSearch);
+  addFriendBtn.addEventListener('click', () => showModal(addFriendModal));
   
   // Modal close on outside click
   window.addEventListener('click', (e) => {
@@ -585,15 +579,8 @@ function handleMessageSubmit(e) {
   const message = messageInput.value.trim();
   if (!message) return;
   
-  // Add message to UI
-  addMessage({
-    id: Date.now(),
-    username: currentUser.username,
-    avatar: currentUser.avatar,
-    content: message,
-    timestamp: new Date(),
-    isOwn: true
-  });
+  // Don't add message to UI locally - wait for server confirmation
+  // This prevents duplicate messages
   
   // Send message to server
   if (socket && socket.connected && isConnected && currentUser && currentUser.id && currentUser.username && currentUser.avatar) {
@@ -826,24 +813,7 @@ function openUserSettings() {
   showStatus('User settings coming soon!', 'info');
 }
 
-// Header controls
-function toggleNotifications() {
-  showStatus('Notifications toggled', 'info');
-}
 
-function showPinnedMessages() {
-  showStatus('Pinned messages coming soon!', 'info');
-}
-
-function toggleMembersSidebar() {
-  if (membersSidebar && membersSidebar.classList) {
-    membersSidebar.classList.toggle('hidden');
-  }
-}
-
-function openSearch() {
-  showStatus('Search functionality coming soon!', 'info');
-}
 
 // Modal management
 function showModal(modal) {
@@ -874,12 +844,6 @@ function showStatus(message, type = 'info') {
 
 // Keyboard shortcuts
 function handleKeyboardShortcuts(e) {
-  // Ctrl/Cmd + K for search
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-    e.preventDefault();
-    openSearch();
-  }
-  
   // Ctrl/Cmd + Shift + M for mute
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'M') {
     e.preventDefault();

@@ -516,22 +516,31 @@ body {
 }
 
 .header-btn {
-  background: none;
+  background: var(--discord-accent);
   border: none;
-  color: var(--interactive-normal);
+  color: var(--text-primary);
   cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
   transition: all 0.2s ease;
+  font-weight: 500;
+  box-shadow: var(--shadow-elevation-low);
 }
 
 .header-btn:hover {
-  color: var(--interactive-hover);
-  background: var(--discord-secondary);
+  background: var(--discord-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-elevation-medium);
+}
+
+.header-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-elevation-low);
 }
 
 .header-btn i {
   font-size: 1rem;
+  margin-right: var(--spacing-xs);
 }
 
 /* Messages Container */
@@ -551,6 +560,18 @@ body {
   display: flex;
   gap: var(--spacing-md);
   padding: var(--spacing-sm) 0;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message-avatar {
@@ -612,13 +633,26 @@ body {
 }
 
 .message.own .message-text {
-  background: var(--discord-primary);
+  background: linear-gradient(135deg, var(--discord-accent) 0%, var(--discord-accent-hover) 100%);
   color: var(--text-primary);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-sm);
   max-width: 70%;
   margin-left: auto;
+  box-shadow: var(--shadow-elevation-low);
+  position: relative;
+}
+
+.message.own .message-text::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid var(--discord-accent);
+  border-top: 8px solid transparent;
 }
 
 /* Other user message styling */
@@ -629,6 +663,19 @@ body {
   border-radius: var(--radius-lg);
   border-top-left-radius: var(--radius-sm);
   max-width: 70%;
+  box-shadow: var(--shadow-elevation-low);
+  position: relative;
+}
+
+.message.other .message-text::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-right: 8px solid var(--discord-secondary);
+  border-top: 8px solid transparent;
 }
 
 /* Message Input */
@@ -801,10 +848,23 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
 .modal.show {
   display: flex;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .modal-content {
@@ -815,6 +875,13 @@ body {
   max-height: 90vh;
   overflow: hidden;
   box-shadow: var(--shadow-elevation-high);
+  border: 1px solid var(--border-primary);
+  transform: scale(0.95);
+  transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-content {
+  transform: scale(1);
 }
 
 .modal-header {
@@ -911,11 +978,19 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-secondary:hover {
   background: var(--discord-tertiary);
   border-color: var(--border-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-elevation-low);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
 }
 
 .btn-primary {
@@ -927,11 +1002,21 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-elevation-low);
 }
 
 .btn-primary:hover {
   background: var(--discord-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-elevation-medium);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-elevation-low);
 }
 
 /* Status Messages */
