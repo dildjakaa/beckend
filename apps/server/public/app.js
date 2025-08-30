@@ -1,6 +1,6 @@
 // Determine server URL based on environment
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const SERVER_URL = isLocalhost ? 'http://localhost:3000' : 'https://krackenx.onrender.com';
+const SERVER_URL = isLocalhost ? 'https://krackenx.onrender.com' : 'https://krackenx.onrender.com';
 
 console.log('Using server:', SERVER_URL);
 
@@ -180,6 +180,12 @@ function initializeEventListeners() {
   
   // Message form
   messageForm.addEventListener('submit', handleMessageSubmit);
+  
+  // Mobile message form
+  const mobileMessageForm = document.getElementById('mobileMessageForm');
+  if (mobileMessageForm) {
+    mobileMessageForm.addEventListener('submit', handleMessageSubmit);
+  }
   
   // Server switching
   document.querySelectorAll('.server-item').forEach(item => {
@@ -441,6 +447,18 @@ function joinChannel(channelId) {
     if (currentChannelName) currentChannelName.textContent = channel.name;
     if (channelTopic) channelTopic.textContent = channel.topic;
     if (messageInput) messageInput.placeholder = `Message #${channel.name}`;
+    
+    // Update mobile channel name
+    const mobileChannelName = document.getElementById('mobileChannelName');
+    if (mobileChannelName) {
+      mobileChannelName.textContent = `#${channel.name}`;
+    }
+    
+    // Update mobile message input placeholder
+    const mobileMessageInput = document.getElementById('mobileMessageInput');
+    if (mobileMessageInput) {
+      mobileMessageInput.placeholder = `Message #${channel.name}`;
+    }
   }
   
   // Clear messages for new channel
@@ -498,6 +516,11 @@ function showChatInterface() {
   // Initialize interface based on device
   if (isMobileDevice()) {
     showMobileView('chat');
+    // Ensure mobile chat view is visible
+    const mobileChatView = document.getElementById('mobileChatView');
+    if (mobileChatView) {
+      mobileChatView.style.display = 'block';
+    }
   }
   
   // Load friends and friend requests
@@ -605,7 +628,14 @@ function handleMessageSubmit(e) {
     return;
   }
   
-  const message = messageInput.value.trim();
+  // Get message from either desktop or mobile input
+  let message = '';
+  if (messageInput && messageInput.value.trim()) {
+    message = messageInput.value.trim();
+  } else if (document.getElementById('mobileMessageInput') && document.getElementById('mobileMessageInput').value.trim()) {
+    message = document.getElementById('mobileMessageInput').value.trim();
+  }
+  
   if (!message) return;
   
   // Don't add message to UI locally - wait for server confirmation
@@ -621,6 +651,10 @@ function handleMessageSubmit(e) {
   
   // Clear input
   if (messageInput) messageInput.value = '';
+  
+  // Clear mobile input
+  const mobileMessageInput = document.getElementById('mobileMessageInput');
+  if (mobileMessageInput) mobileMessageInput.value = '';
 }
 
 // Add message to UI
@@ -645,14 +679,27 @@ function addMessage(messageData) {
     </div>
   `;
   
+  // Add to desktop messages
   if (messagesDiv) {
-    messagesDiv.appendChild(messageElement);
+    messagesDiv.appendChild(messageElement.cloneNode(true));
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+  
+  // Add to mobile messages if on mobile
+  const mobileMessages = document.getElementById('mobileMessages');
+  if (mobileMessages) {
+    mobileMessages.appendChild(messageElement);
+    mobileMessages.scrollTop = mobileMessages.scrollHeight;
   }
 }
 
 // Load channel messages
 function loadChannelMessages(channelId) {
+  // Clear existing messages in both desktop and mobile
+  if (messagesDiv) messagesDiv.innerHTML = '';
+  const mobileMessages = document.getElementById('mobileMessages');
+  if (mobileMessages) mobileMessages.innerHTML = '';
+  
   // Implement with your backend
   // For now, just show a welcome message
   if (channelId === 'general') {
@@ -1318,7 +1365,14 @@ function showMobileView(view) {
     document.querySelectorAll('.mobile-view').forEach(v => v.style.display = 'none');
     
     // Show selected view
-    if (view === 'friends') {
+    if (view === 'chat') {
+        document.getElementById('mobileChatView').style.display = 'block';
+        // Update mobile channel name
+        const mobileChannelName = document.getElementById('mobileChannelName');
+        if (mobileChannelName) {
+            mobileChannelName.textContent = `#${currentChannel}`;
+        }
+    } else if (view === 'friends') {
         mobileFriendsView.style.display = 'block';
         loadFriends();
         loadFriendRequests();
@@ -1360,12 +1414,20 @@ function initializeMobileInterface() {
         });
     });
     
-    // Mobile add friend button
-    if (mobileAddFriendBtn) {
-        mobileAddFriendBtn.addEventListener('click', () => {
-            openModal(addFriendModal);
-        });
-    }
+      // Mobile add friend button
+  if (mobileAddFriendBtn) {
+    mobileAddFriendBtn.addEventListener('click', () => {
+      openModal(addFriendModal);
+    });
+  }
+  
+  // Mobile add friend button 2 (in friends view)
+  const mobileAddFriendBtn2 = document.getElementById('mobileAddFriendBtn2');
+  if (mobileAddFriendBtn2) {
+    mobileAddFriendBtn2.addEventListener('click', () => {
+      openModal(addFriendModal);
+    });
+  }
     
     // Mobile add server buttons
     if (mobileAddServerBtn) {
@@ -1439,6 +1501,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show appropriate interface based on device
     if (isMobileDevice()) {
         showMobileView('chat');
+        // Ensure mobile chat view is visible by default
+        const mobileChatView = document.getElementById('mobileChatView');
+        if (mobileChatView) {
+            mobileChatView.style.display = 'block';
+        }
     }
 });
 

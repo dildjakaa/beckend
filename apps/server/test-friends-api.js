@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = 'krackenx.onrender.com';
 
 async function testFriendsAPI() {
     console.log('🧪 Testing Friends API endpoints...\n');
@@ -23,7 +23,7 @@ async function testFriendsAPI() {
             '/api/friends/list/1',
             '/api/friends/requests/1',
             '/api/friends/send-request',
-            '/api/friends/respond-request'
+            '/api/friends/respond-request' 
         ];
         
         for (const endpoint of endpoints) {

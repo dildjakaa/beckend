@@ -57,11 +57,38 @@
                 </button>
             </div>
 
+            <!-- Mobile Chat View (Default) -->
+            <div id="mobileChatView" class="mobile-view" style="display: block;">
+                <div class="mobile-header">
+                    <h2 id="mobileChannelName">#general</h2>
+                    <button class="mobile-header-btn" id="mobileAddFriendBtn">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                </div>
+                
+                <!-- Messages Display for Mobile -->
+                <div class="messages-container">
+                    <div id="mobileMessages" class="messages"></div>
+                </div>
+
+                <!-- Message Input for Mobile -->
+                <div class="message-input-container">
+                    <form id="mobileMessageForm" class="message-form">
+                        <div class="input-wrapper">
+                            <div class="message-input-wrapper">
+                                <input type="text" id="mobileMessageInput" placeholder="Message #general" 
+                                       maxlength="2000" autocomplete="off">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Mobile Friends View -->
             <div id="mobileFriendsView" class="mobile-view" style="display: none;">
                 <div class="mobile-header">
                     <h2>Friends</h2>
-                    <button class="mobile-header-btn" id="mobileAddFriendBtn">
+                    <button class="mobile-header-btn" id="mobileAddFriendBtn2">
                         <i class="fas fa-user-plus"></i>
                     </button>
                 </div>
@@ -246,12 +273,7 @@
                     </div>
                 </div>
             </div> <!-- End of desktop-interface -->
-
-
-
-
-            </div> <!-- End of desktop-interface -->
-        </div>
+        </div> <!-- End of chat-container -->
 
         <!-- Modals -->
         <div id="addServerModal" class="modal">
