@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kracken Messenger</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Login Form (shown initially) -->
+        <div id="loginContainer" class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <img src="logo.png" alt="Kracken Logo" class="logo-image">
+                        <h1>Kracken</h1>
+                    </div>
+                    <p>Join the conversation</p>
+                </div>
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required minlength="3" maxlength="50" 
+                               placeholder="Enter your username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required minlength="4" 
+                               placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Sign In
+                    </button>
+                </form>
+                <div class="login-footer" style="margin-top: 16px; text-align: center; color: #dcddde;">
+                    <span>Нет аккаунта?</span>
+                    <button id="showRegisterBtn" class="btn-secondary" style="margin-left: 8px; padding: 6px 10px;">Создать</button>
+                </div>
+            </div>
+
+            <!-- Register Card (hidden initially) -->
+            <div id="registerCard" class="login-card" style="display: none;">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <img src="logo.png" alt="Kracken Logo" class="logo-image">
+                        <h1>Kracken</h1>
+                    </div>
+                    <p>Create your account</p>
+                </div>
+                <form id="registerForm" class="login-form">
+                    <div class="form-group">
+                        <label for="regUsername">Username</label>
+                        <input type="text" id="regUsername" required minlength="3" maxlength="50" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">Email</label>
+                        <input type="email" id="regEmail" required placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" required minlength="6" placeholder="Create a password">
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:center; gap: 8px;">
+                        <input type="checkbox" id="regTos" required>
+                        <label for="regTos" style="margin:0;">Принимаю Условия использования и Политику конфиденциальности</label>
+                    </div>
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-user-plus"></i>
+                        Зарегистрироваться
+                    </button>
+                </form>
+                <div class="login-footer" style="margin-top: 16px; text-align: center; color: #dcddde;">
+                    <button id="showLoginFromRegisterBtn" class="btn-secondary" style="padding: 6px 10px;">У меня уже есть аккаунт</button>
+                </div>
+            </div>
+
+            <!-- Verify Email Card (hidden initially) -->
+            <div id="verifyCard" class="login-card" style="display: none;">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <img src="logo.png" alt="Kracken Logo" class="logo-image">
+                        <h1>Kracken</h1>
+                    </div>
+                    <p>Подтвердите вашу почту</p>
+                </div>
+                <form id="verifyForm" class="login-form">
+                    <div class="form-group">
+                        <label for="verEmail">Email</label>
+                        <input type="email" id="verEmail" required placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="verCode">Код подтверждения</label>
+                        <input type="text" id="verCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" required placeholder="6-значный код">
+                    </div>
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-check"></i>
+                        Подтвердить и войти
+                    </button>
+                </form>
+                <div class="login-footer" style="margin-top: 12px; text-align: center; color: #dcddde; display:flex; gap:8px; justify-content:center;">
+                    <button id="resendCodeBtn" class="btn-secondary" style="padding: 6px 10px;">Выслать код заново</button>
+                    <button id="showLoginFromVerifyBtn" class="btn-secondary" style="padding: 6px 10px;">Назад</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Discord-like Interface (hidden initially) -->
+        <div id="chatContainer" class="chat-container" style="display: none;">
+            <!-- Mobile Navigation Bar -->
+            <div class="mobile-nav">
+                <button class="mobile-nav-btn active" data-view="chat">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </button>
+                <button class="mobile-nav-btn" data-view="friends">
+                    <i class="fas fa-users"></i>
+                    <span>Friends</span>
+                </button>
+                <button class="mobile-nav-btn" data-view="servers">
+                    <i class="fas fa-server"></i>
+                    <span>Servers</span>
+                </button>
+            </div>
+
+            <!-- Mobile Chat View (Default) -->
+            <div id="mobileChatView" class="mobile-view" style="display: block;">
+                <div class="mobile-header">
+                    <h2 id="mobileChannelName">#general</h2>
+                    <button class="mobile-header-btn" id="mobileAddFriendBtn">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                </div>
+                
+                <!-- Messages Display for Mobile -->
+                <div class="messages-container">
+                    <div id="mobileMessages" class="messages"></div>
+                </div>
+
+                <!-- Message Input for Mobile -->
+                <div class="message-input-container">
+                    <form id="mobileMessageForm" class="message-form">
+                        <div class="input-wrapper">
+                            <div class="message-input-wrapper">
+                                <input type="text" id="mobileMessageInput" placeholder="Message #general" 
+                                       maxlength="2000" autocomplete="off">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Mobile Friends View -->
+            <div id="mobileFriendsView" class="mobile-view" style="display: none;">
+                <div class="mobile-header">
+                    <h2>Friends</h2>
+                    <button class="mobile-header-btn" id="mobileAddFriendBtn2">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                </div>
+                
+                <div class="friends-tabs">
+                    <button class="friend-tab active" data-tab="friends">Friends</button>
+                    <button class="friend-tab" data-tab="requests">Requests</button>
+                </div>
+                
+                <div class="friends-content">
+                    <div id="friendsList" class="friends-list">
+                        <!-- Friends will be populated here -->
+                    </div>
+                    
+                    <div id="friendRequestsList" class="friend-requests-list" style="display: none;">
+                        <!-- Friend requests will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Servers View -->
+            <div id="mobileServersView" class="mobile-view" style="display: none;">
+                <div class="mobile-header">
+                    <h2>Servers</h2>
+                    <button class="mobile-header-btn" id="mobileAddServerBtn">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                <div class="mobile-servers-list">
+                    <div class="server-item home-server active" data-server-id="home">
+                        <div class="server-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <span>Home</span>
+                    </div>
+                    
+                    <div class="server-item add-server" id="mobileAddServerBtn2">
+                        <div class="server-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <span>Add Server</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desktop Interface (hidden on mobile) -->
+            <div class="desktop-interface">
+                <!-- Server List Sidebar (Left) -->
+                <div class="server-list">
+                    <div class="server-item home-server active" data-server-id="home">
+                        <div class="server-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="server-tooltip">Home</div>
+                    </div>
+                    
+                    <div class="server-separator"></div>
+                    
+                    <div class="server-separator"></div>
+                    
+                    <div class="server-item add-server" id="addServerBtn">
+                        <div class="server-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="server-tooltip">Add Server</div>
+                    </div>
+                </div>
+
+                <!-- Channel List Sidebar (Middle) -->
+                <div class="channel-sidebar">
+                    <div class="server-header">
+                        <div class="server-name">
+                            <i class="fas fa-home"></i>
+                            <span>Kracken Home</span>
+                        </div>
+                        <button class="server-menu-btn" id="serverMenuBtn">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+
+                    <div class="channel-categories">
+                        <!-- Text Channels -->
+                        <div class="channel-category">
+                            <div class="category-header">
+                                <i class="fas fa-chevron-down"></i>
+                                <span>TEXT CHANNELS</span>
+                            </div>
+                            <div class="channel-list">
+                                <div class="channel-item active" data-channel-id="general">
+                                    <i class="fas fa-hashtag"></i>
+                                    <span>general</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Direct Messages -->
+                        <div class="channel-category">
+                            <div class="category-header">
+                                <i class="fas fa-chevron-down"></i>
+                                <span>DIRECT MESSAGES</span>
+                            </div>
+                            <div class="channel-list" id="directMessagesList">
+                                <!-- Direct messages will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Info Panel -->
+                    <div class="user-panel">
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                <img src="" alt="User Avatar" id="userAvatar">
+                            </div>
+                            <div class="user-details">
+                                <div class="username" id="userDisplayName">Username</div>
+                                <div class="user-status" id="userStatus">Online</div>
+                            </div>
+                        </div>
+                        <div class="user-controls">
+                            <button class="control-btn" id="muteBtn" title="Mute">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="control-btn" id="deafenBtn" title="Deafen">
+                                <i class="fas fa-headphones"></i>
+                            </button>
+                            <button class="control-btn" id="settingsBtn" title="User Settings">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                            <button class="control-btn" id="logoutBtn" title="Logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Chat Area -->
+                <div class="main-chat">
+                    <div class="chat-header">
+                        <div class="chat-header-left">
+                            <div class="channel-info">
+                                <i class="fas fa-hashtag"></i>
+                                <h2 id="currentChannelName">general</h2>
+                            </div>
+                            <div class="channel-topic" id="channelTopic">General discussion and announcements</div>
+                        </div>
+                        <div class="chat-header-right">
+                            <div class="header-controls">
+                                <button class="header-btn" id="addFriendBtn" title="Add Friend">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Add Friend</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages Display -->
+                    <div class="messages-container">
+                        <div id="messages" class="messages"></div>
+                    </div>
+
+                    <!-- Message Input -->
+                    <div class="message-input-container">
+                        <form id="messageForm" class="message-form">
+                            <div class="input-wrapper">
+                                <div class="message-input-wrapper">
+                                    <input type="text" id="messageInput" placeholder="Message #general" 
+                                           maxlength="2000" autocomplete="off">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Members Sidebar (Right) -->
+                <div class="members-sidebar">
+                    <div class="members-header">
+                        <h3>Online — <span id="onlineCount">0</span></h3>
+                    </div>
+                    <div class="members-list" id="membersList">
+                        <!-- Members will be populated here -->
+                    </div>
+                </div>
+            </div> <!-- End of desktop-interface -->
+        </div> <!-- End of chat-container -->
+
+        <!-- Modals -->
+        <div id="addServerModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create a Server</h3>
+                    <button class="close-btn" id="addServerCloseBtn">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="serverName">Server Name</label>
+                        <input type="text" id="serverName" placeholder="Enter server name" maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="serverDescription">Description (Optional)</label>
+                        <textarea id="serverDescription" placeholder="Describe your server" maxlength="500"></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="addServerCancelBtn">Cancel</button>
+                    <button class="btn-primary" id="addServerConfirmBtn">Create Server</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="addFriendModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add Friend</h3>
+                    <button class="close-btn" id="addFriendCloseBtn">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="friendUsername">Username</label>
+                        <input type="text" id="friendUsername" placeholder="Enter username to add as friend" maxlength="50">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="addFriendCancelBtn">Cancel</button>
+                    <button class="btn-primary" id="addFriendConfirmBtn">Add Friend</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Friend Request Notification Modal -->
+        <div id="friendRequestModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Friend Request</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="friend-request-info">
+                        <div class="friend-request-avatar">
+                            <img src="" alt="User Avatar" id="requestUserAvatar">
+                        </div>
+                        <div class="friend-request-details">
+                            <h4 id="requestUsername">Username</h4>
+                            <p>wants to be your friend!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="rejectFriendBtn">Decline</button>
+                    <button class="btn-primary" id="acceptFriendBtn">Accept</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <!-- Socket.IO Client Library -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Main Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
