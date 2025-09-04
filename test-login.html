@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin: 10px 0; }
+        label { display: inline-block; width: 100px; }
+        input { padding: 5px; width: 200px; }
+        button { padding: 10px 20px; margin: 10px 0; }
+        .result { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Login API Test</h1>
+    
+    <div class="form-group">
+        <label for="serverUrl">Server URL:</label>
+        <input type="text" id="serverUrl" value="https://krackenx.onrender.com" />
+    </div>
+    
+    <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" placeholder="Enter username" />
+    </div>
+    
+    <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" placeholder="Enter password" />
+    </div>
+    
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testHealth()">Test Health Check</button>
+    
+    <div id="result" class="result"></div>
+    
+    <script>
+        async function testHealth() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = 'Testing health check...';
+                const response = await fetch(`${serverUrl}/api/health`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h3>Health Check Result:</h3>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Data:</strong> <pre>${JSON.stringify(data, null, 2)}</pre></p>
+                `;
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Health Check Failed:</h3>
+                    <p class="error">${error.message}</p>
+                `;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testLogin() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!username || !password) {
+                resultDiv.innerHTML = '<p class="error">Please enter both username and password</p>';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = 'Testing login...';
+                const response = await fetch(`${serverUrl}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h3>Login Result:</h3>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response:</strong> <pre>${JSON.stringify(data, null, 2)}</pre></p>
+                `;
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    if (data.success && data.data && data.data.token && data.data.user) {
+                        resultDiv.innerHTML += `
+                            <h4>✅ Login Successful!</h4>
+                            <p><strong>Token:</strong> ${data.data.token.substring(0, 20)}...</p>
+                            <p><strong>User ID:</strong> ${data.data.user.id}</p>
+                            <p><strong>Username:</strong> ${data.data.user.username}</p>
+                        `;
+                    }
+                } else {
+                    resultDiv.className = 'result error';
+                    if (data.error) {
+                        resultDiv.innerHTML += `<p class="error"><strong>Error:</strong> ${data.error}</p>`;
+                    }
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Login Failed:</h3>
+                    <p class="error">${error.message}</p>
+                `;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>
